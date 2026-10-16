@@ -1,0 +1,104 @@
+{
+  "id": "/",
+  "name": "F&V Sports — Plataforma de Futebol, Vôlei e Multi-Esportes",
+  "short_name": "F&V Sports",
+  "description": "Organize suas partidas de futebol e vôlei, presenças em tempo real, sorteio de times e feed social",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "lang": "pt-BR",
+  "categories": ["sports", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/logo_72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo_256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Partidas Agendadas",
+      "short_name": "Partidas",
+      "description": "Ver lista de partidas disponíveis",
+      "url": "/",
+      "icons": [{ "src": "/logo_96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Classificação Geral",
+      "short_name": "Tabela",
+      "description": "Acompanhar pontuação e artilharia",
+      "url": "/standings",
+      "icons": [{ "src": "/logo_96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}
