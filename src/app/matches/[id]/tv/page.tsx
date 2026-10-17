@@ -27,6 +27,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TeamBadge } from '@/components/TeamBadge';
 import { ImageLightboxModal, LightboxPreviewData } from '@/components/ImageLightboxModal';
+import { getVolleyWinRuleLabel } from '@/lib/volleyballRules';
 
 export default function MatchTvBroadcastPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -279,6 +280,9 @@ export default function MatchTvBroadcastPage({ params }: { params: Promise<{ id:
   };
 
   const isVolei = match?.sport_type === 'volei';
+  const matchRules = match?.match_rules || (match?.teams_custom_config as any)?.match_rules || {};
+  const volleyRequiresTwoPointAdvantage = matchRules.volley_requires_two_point_advantage === true;
+  const volleyTargetScore = activeGame?.target_duration_minutes || 12;
 
   // ═══════════════════════════════════════════════════════════════════
   // CÁLCULO DA CLASSIFICAÇÃO AO VIVO
@@ -532,7 +536,10 @@ export default function MatchTvBroadcastPage({ params }: { params: Promise<{ id:
                   {isVolei ? (
                     <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <Trophy className="w-3 h-3 text-amber-400" />
-                      12 Pts para Vencer 🏐
+                      {getVolleyWinRuleLabel({
+                        targetScore: volleyTargetScore,
+                        requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                      })} 🏐
                     </span>
                   ) : activeGame.two_goals_rule ? (
                     <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
@@ -626,7 +633,10 @@ export default function MatchTvBroadcastPage({ params }: { params: Promise<{ id:
                       <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 shadow-md">
                         <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span className="text-xs sm:text-sm font-black tracking-wider text-amber-300">
-                          Meta: {activeGame.target_duration_minutes || 12} Pontos 🏐
+                          {getVolleyWinRuleLabel({
+                            targetScore: volleyTargetScore,
+                            requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                          })} 🏐
                         </span>
                       </div>
                     )}

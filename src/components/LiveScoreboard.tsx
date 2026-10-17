@@ -39,6 +39,7 @@ import { getTeamInfo as getTeamInfoFromHelper } from '@/lib/teamsHelper';
 import { EditTeamsModal } from '@/components/EditTeamsModal';
 import { TeamBadge } from '@/components/TeamBadge';
 import { ImageLightboxModal, LightboxPreviewData } from '@/components/ImageLightboxModal';
+import { getVolleyWinnerSide, getVolleyWinRuleLabel } from '@/lib/volleyballRules';
 
 interface LiveScoreboardProps {
   match: Match;
@@ -232,6 +233,8 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
   // ═══════════════════════════════════════════════════════════════════
 
   const isVolei = match.sport_type === 'volei';
+  const volleyRequiresTwoPointAdvantage = matchRules.volley_requires_two_point_advantage === true;
+  const volleyTargetScore = activeGame?.target_duration_minutes || 12;
 
   // Iniciar novo confronto
   const handleStartNewGame = async () => {
@@ -414,12 +417,16 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
         return;
       }
 
-      // 2. Regras de encerramento automático:
-      // VÔLEI: 12 pontos para vencer automaticamente (sem empates)
-      // FUTEBOL: Regra de 2 gols se ativada
-      const isVoleiHit12 = isVolei && (newScoreA >= 12 || newScoreB >= 12);
+      // 2. Regras de encerramento automático.
+      const volleyWinnerSide = isVolei
+        ? getVolleyWinnerSide(newScoreA, newScoreB, {
+            targetScore: activeGame.target_duration_minutes || 12,
+            requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+          })
+        : null;
+      const isVolleyWon = volleyWinnerSide !== null;
       const isFutebolHitTwoGoals = !isVolei && activeGame.two_goals_rule && (newScoreA >= 2 || newScoreB >= 2);
-      const isAutoFinished = isVoleiHit12 || isFutebolHitTwoGoals;
+      const isAutoFinished = isVolleyWon || isFutebolHitTwoGoals;
 
       let updatePayload: Partial<MatchGame> = {
         score_a: newScoreA,
@@ -427,7 +434,9 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
       };
 
       if (isAutoFinished) {
-        const winner = (isVolei ? (newScoreA >= 12 ? activeGame.team_a : activeGame.team_b) : (newScoreA >= 2 ? activeGame.team_a : activeGame.team_b));
+        const winner = isVolei
+          ? (volleyWinnerSide === 'a' ? activeGame.team_a : activeGame.team_b)
+          : (newScoreA >= 2 ? activeGame.team_a : activeGame.team_b);
         const finalDuration = currentSeconds;
 
         updatePayload = {
@@ -451,8 +460,8 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
         toast.error('Erro ao atualizar placar.');
       } else {
         const teamInfo = getTeamInfo(goalTeamNumber);
-        if (isVoleiHit12) {
-          toast.success(`🎉 FIM DE JOGO! ${teamInfo.name} atingiu 12 pontos e venceu a partida de vôlei! 🏆`);
+        if (isVolleyWon) {
+          toast.success(`🎉 FIM DE JOGO! ${teamInfo.name} venceu por ${newScoreA} × ${newScoreB}! 🏆`);
         } else if (isFutebolHitTwoGoals) {
           toast.success(`🎉 GOOOL e Fim de Jogo! ${teamInfo.name} venceu por 2 gols! 🏆`);
         } else if (isVolei) {
@@ -635,11 +644,17 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
             <div className="flex items-center gap-2 text-[11px] font-extrabold text-slate-400">
               {isVolei ? (
                 <span
-                  title="Primeiro time a atingir 12 pontos vence o jogo"
+                  title={getVolleyWinRuleLabel({
+                    targetScore: volleyTargetScore,
+                    requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                  })}
                   className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1"
                 >
                   <Trophy className="w-3 h-3 text-amber-400" />
-                  <span>12 Pts para Vencer 🏐</span>
+                  <span>{getVolleyWinRuleLabel({
+                    targetScore: volleyTargetScore,
+                    requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                  })} 🏐</span>
                 </span>
               ) : activeGame.two_goals_rule ? (
                 <span
@@ -1062,7 +1077,11 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
             ) : (
               <div className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
                 <Trophy className="w-4 h-4 text-amber-400" />
-                <span>Regra Oficial do Vôlei: O primeiro time a atingir 12 pontos vence automaticamente.</span>
+                <span>
+                  Regra do Vôlei: {volleyRequiresTwoPointAdvantage
+                    ? 'a equipe precisa atingir 12 pontos e abrir 2 de vantagem para vencer.'
+                    : 'o primeiro time a atingir 12 pontos vence automaticamente.'}
+                </span>
               </div>
             )}
 

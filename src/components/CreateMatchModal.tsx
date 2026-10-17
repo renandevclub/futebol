@@ -64,6 +64,7 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
   const [trackCards, setTrackCards] = useState(false);
   const [stageDurationMinutes, setStageDurationMinutes] = useState(10);
   const [stagesCount, setStagesCount] = useState(1);
+  const [volleyRequiresTwoPointAdvantage, setVolleyRequiresTwoPointAdvantage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lista inicial de jogadores inscritos cadastrados pelo admin
@@ -123,6 +124,13 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
       fetchLocations();
     }
   }, [isOpen, currentLeague, availableLeagues]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Partidas novas mantêm, por padrão, a regra legada de encerrar na meta.
+      setVolleyRequiresTwoPointAdvantage(false);
+    }
+  }, [isOpen]);
 
   const handleSelectPredefinedLocation = (locName: string) => {
     if (!locName) return;
@@ -222,14 +230,16 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
         sorteio_raspadinha_ativo: sorteioRaspadinhaAtivo,
         observacoes: observacoes.trim() || null,
         status: 'agendada',
-        match_rules: !isVolei
+        match_rules: isVolei
           ? {
+              volley_requires_two_point_advantage: volleyRequiresTwoPointAdvantage,
+            }
+          : {
               track_assists: trackAssists,
               track_cards: trackCards,
               stage_duration_minutes: stageDurationMinutes,
               stages_count: stagesCount,
-            }
-          : null,
+            },
         teams_custom_config: isVolei
           ? {
               gender_limits: {
@@ -931,6 +941,50 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
               </p>
             </div>
           </div>
+
+          {isVolei && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/90 to-slate-950 border border-amber-500/30 space-y-3 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="font-black text-xs text-white uppercase tracking-wider block">
+                    Regras do placar de vôlei
+                  </span>
+                  <span className="text-[11px] text-slate-400 block mt-1">
+                    Defina a regra antes de iniciar a partida. Ela ficará salva no histórico.
+                  </span>
+                </div>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
+                  12 pontos
+                </span>
+              </div>
+
+              <label className="p-3 rounded-xl bg-slate-900/70 border border-slate-700/80 flex items-center justify-between gap-3 cursor-pointer">
+                <span>
+                  <span className="font-extrabold text-xs text-white block">
+                    Exigir 2 pontos de vantagem para encerrar
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5 leading-relaxed">
+                    {volleyRequiresTwoPointAdvantage
+                      ? 'Ativa: 12 × 11 continua; 12 × 10 encerra.'
+                      : 'Desativada: a primeira equipe a chegar a 12 pontos encerra o jogo.'}
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={volleyRequiresTwoPointAdvantage}
+                  onChange={(event) => setVolleyRequiresTwoPointAdvantage(event.target.checked)}
+                  className="sr-only peer"
+                />
+                <span className={`relative inline-flex h-6 w-11 shrink-0 rounded-full p-0.5 transition-colors ${
+                  volleyRequiresTwoPointAdvantage ? 'bg-amber-500' : 'bg-slate-700'
+                }`}>
+                  <span className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    volleyRequiresTwoPointAdvantage ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </span>
+              </label>
+            </div>
+          )}
 
           {/* ===== SEÇÃO DE CONFIGURAÇÕES DA PARTIDA (SOMENTE FUTEBOL - ITEM 1 DO REQUISITO) ===== */}
           {!isVolei && (

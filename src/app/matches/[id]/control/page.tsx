@@ -16,6 +16,7 @@ import { ImageLightboxModal, LightboxPreviewData } from '@/components/ImageLight
 import { ChampionModal } from '@/components/ChampionModal';
 import { getMatchChampionData, MatchChampionResult } from '@/lib/championHelper';
 import { notifyGameStarted, notifyGoalScored, notifyChampionDeclared } from '@/lib/notificationDispatcher';
+import { getVolleyWinnerSide, getVolleyWinRuleLabel } from '@/lib/volleyballRules';
 import { useLeague } from '@/context/LeagueContext';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -68,7 +69,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
   const [allMatchGoals, setAllMatchGoals] = useState<MatchGameGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Regras da partida (Futebol)
+  // Regras persistidas da partida (Futebol e Vôlei)
   const matchRules = useMemo(() => {
     return match?.match_rules || (match?.teams_custom_config as any)?.match_rules || {};
   }, [match]);
@@ -76,6 +77,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
   const trackAssists = !!matchRules.track_assists;
   const trackCards = !!matchRules.track_cards;
   const defaultStageDuration = matchRules.stage_duration_minutes || 10;
+  const volleyRequiresTwoPointAdvantage = matchRules.volley_requires_two_point_advantage === true;
 
   // Estados de criação de novo jogo
   const [selectedTeamA, setSelectedTeamA] = useState<number>(1);
@@ -553,8 +555,16 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
         return;
       }
 
-      const isVolleyWon = newScoreA >= targetScore || newScoreB >= targetScore;
-      const volleyWinner = isVolleyWon ? (newScoreA >= targetScore ? activeGame.team_a : activeGame.team_b) : null;
+      const volleyWinnerSide = getVolleyWinnerSide(newScoreA, newScoreB, {
+        targetScore,
+        requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+      });
+      const isVolleyWon = volleyWinnerSide !== null;
+      const volleyWinner = volleyWinnerSide === 'a'
+        ? activeGame.team_a
+        : volleyWinnerSide === 'b'
+          ? activeGame.team_b
+          : null;
 
       let updatePayload: Partial<MatchGame> = {
         score_a: newScoreA,
@@ -583,7 +593,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
       } else {
         const teamInfo = getTeamInfo(goalTeamNumber);
         if (isVolleyWon) {
-          toast.success(`🎉 FIM DE JOGO! ${teamInfo.name} atingiu ${targetScore} pontos e venceu a partida de vôlei! 🏆`);
+          toast.success(`🎉 FIM DE JOGO! ${teamInfo.name} venceu por ${newScoreA} × ${newScoreB}! 🏆`);
         } else {
           toast.success(`🏐 Ponto do ${teamInfo.name}! (${newScoreA} × ${newScoreB})`);
         }
@@ -813,7 +823,13 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
 
     try {
       const targetScore = activeGame.target_duration_minutes || 12;
-      const isAutoWin = isVolei && (newScoreA >= targetScore || newScoreB >= targetScore);
+      const volleyWinnerSide = isVolei
+        ? getVolleyWinnerSide(newScoreA, newScoreB, {
+            targetScore,
+            requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+          })
+        : null;
+      const isAutoWin = volleyWinnerSide !== null;
 
       let updatePayload: Partial<MatchGame> = {
         score_a: newScoreA,
@@ -824,7 +840,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
         updatePayload = {
           ...updatePayload,
           status: 'finished',
-          winner_team: newScoreA >= targetScore ? activeGame.team_a : activeGame.team_b,
+          winner_team: volleyWinnerSide === 'a' ? activeGame.team_a : activeGame.team_b,
           is_draw: false,
           timer_is_running: false,
           ended_at: new Date().toISOString(),
@@ -1239,7 +1255,10 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
               {isVolei ? (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-xs">
                   <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>Meta: {currentVolleyTarget} Pontos 🏐</span>
+                  <span>{getVolleyWinRuleLabel({
+                    targetScore: currentVolleyTarget,
+                    requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                  })} 🏐</span>
                 </div>
               ) : (
                 <button
@@ -2061,7 +2080,10 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
                 ) : (
                   <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                     <Trophy className="w-4 h-4 text-amber-400" />
-                    <span>Meta do Vôlei: {targetVolleyScore} pontos para vencer</span>
+                    <span>{getVolleyWinRuleLabel({
+                      targetScore: targetVolleyScore,
+                      requireTwoPointAdvantage: volleyRequiresTwoPointAdvantage,
+                    })} 🏐</span>
                   </div>
                 )}
               </div>

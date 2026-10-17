@@ -291,6 +291,9 @@ export interface Match {
     stage_duration_minutes?: number;
     stages_count?: number;
     halftime_interval_minutes?: number;
+    // Vôlei: quando ativa, só encerra ao atingir a meta com 2 pontos de vantagem.
+    // Ausente mantém o comportamento legado (encerra ao atingir a meta).
+    volley_requires_two_point_advantage?: boolean;
   } | null;
   teams_custom_config?: (Record<string | number, { name: string; colorId: string; emoji?: string; badge_url?: string | null }> & {
     gender_limits?: {
@@ -679,5 +682,4 @@ export interface TournamentFinancialSummary {
 }
 
 export * from './finance';
-
 
