@@ -12,6 +12,8 @@ import {
   validatePhoneNumber,
   normalizePhoneDb,
   cleanPhoneNumber,
+  sha256Hex,
+  normalizeInviteCode,
 } from '@/lib/phoneUtils';
 
 export interface SignupParams {
@@ -20,6 +22,7 @@ export interface SignupParams {
   password: string;
   apelido?: string;
   genero?: 'masculino' | 'feminino';
+  inviteCode?: string;
 }
 
 export interface AuthResponse {
@@ -35,9 +38,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isBlocked: boolean;
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<AuthResponse>;
   signup: (params: SignupParams) => Promise<AuthResponse>;
+  recoverPassword: (phone: string, code: string, newPassword: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   // Métodos legados mantidos para compatibilidade retroativa
@@ -59,6 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchProfileForUser = useCallback(async (user: User): Promise<Profile | null> => {
     try {
+      let resolvedProfile: Profile | null = null;
+
       // 1. Tenta buscar pelo auth_id (vínculo oficial)
       const { data: profileByAuthId, error: errAuthId } = await supabase
         .from('profiles')
@@ -67,42 +74,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (profileByAuthId && !errAuthId) {
-        return profileByAuthId;
-      }
+        resolvedProfile = profileByAuthId;
+      } else {
+        // 2. Se não encontrou por auth_id, busca pelo telefone normalizado
+        const rawPhone = user.user_metadata?.whatsapp || user.phone || '';
+        const nationalPhone = getNationalDigits(rawPhone);
 
-      // 2. Se não encontrou por auth_id, busca pelo telefone normalizado
-      const rawPhone = user.user_metadata?.whatsapp || user.phone || '';
-      const nationalPhone = getNationalDigits(rawPhone);
-
-      if (nationalPhone) {
-        const { data: profileByPhone, error: errPhone } = await supabase
-          .from('profiles')
-          .select('*')
-          .or(`whatsapp.eq.${nationalPhone},whatsapp.eq.55${nationalPhone}`)
-          .order('created_at', { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (profileByPhone && !errPhone) {
-          // Vincula o auth_id ao perfil existente
-          const { data: updatedProfile } = await supabase
+        if (nationalPhone) {
+          const { data: profileByPhone, error: errPhone } = await supabase
             .from('profiles')
-            .update({ auth_id: user.id })
-            .eq('id', profileByPhone.id)
-            .select()
-            .single();
+            .select('*')
+            .or(`whatsapp_normalized.eq.${nationalPhone},whatsapp.eq.${nationalPhone},whatsapp.eq.55${nationalPhone}`)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
 
-          return updatedProfile || profileByPhone;
+          if (profileByPhone && !errPhone) {
+            // Vincula o auth_id ao perfil existente e atualiza normalização
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .update({
+                auth_id: user.id,
+                whatsapp_normalized: nationalPhone,
+                last_login_at: new Date().toISOString(),
+              })
+              .eq('id', profileByPhone.id)
+              .select()
+              .single();
+
+            resolvedProfile = updatedProfile || profileByPhone;
+          }
+        }
+
+        // 3. Fallback: chamar RPC segura do banco para criar ou sincronizar
+        if (!resolvedProfile) {
+          const { data: rpcProfile } = await supabase.rpc('sync_profile_for_auth_user');
+          if (rpcProfile) {
+            resolvedProfile = rpcProfile as Profile;
+          }
         }
       }
 
-      // 3. Fallback: chamar RPC segura do banco para criar ou sincronizar
-      const { data: rpcProfile } = await supabase.rpc('sync_profile_for_auth_user');
-      if (rpcProfile) {
-        return rpcProfile as Profile;
+      // 4. Verificação de Bloqueio Efetivo: se o usuário estiver bloqueado, revoga a sessão imediatamente
+      if (resolvedProfile && resolvedProfile.account_status === 'blocked') {
+        console.warn('Conta bloqueada detectada. Revogando sessão do usuário:', resolvedProfile.id);
+        await supabase.auth.signOut();
+        setSession(null);
+        setAuthUser(null);
+        setProfile(null);
+        toast.error('Sua conta está bloqueada pela administração do sistema.');
+        return null;
       }
 
-      return null;
+      return resolvedProfile;
     } catch (err) {
       console.error('Erro ao carregar perfil do usuário:', err);
       return null;
@@ -127,7 +151,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setAuthUser(initialSession.user);
           const userProfile = await fetchProfileForUser(initialSession.user);
-          if (isMounted) setProfile(userProfile);
+          if (isMounted) {
+            if (userProfile && userProfile.account_status !== 'blocked') {
+              setProfile(userProfile);
+            } else {
+              setProfile(null);
+              setSession(null);
+              setAuthUser(null);
+            }
+          }
         }
       } catch (err) {
         console.error('Erro na inicialização da autenticação:', err);
@@ -148,7 +180,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (currentSession?.user) {
           const userProfile = await fetchProfileForUser(currentSession.user);
-          if (isMounted) setProfile(userProfile);
+          if (isMounted) {
+            if (userProfile && userProfile.account_status !== 'blocked') {
+              setProfile(userProfile);
+            } else {
+              setProfile(null);
+              setSession(null);
+              setAuthUser(null);
+            }
+          }
         } else {
           if (isMounted) setProfile(null);
         }
@@ -180,6 +220,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (data) {
+          if (data.account_status === 'blocked') {
+            await supabase.auth.signOut();
+            setSession(null);
+            setAuthUser(null);
+            setProfile(null);
+            toast.error('Sua conta foi suspensa pela administração.');
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            }
+            return;
+          }
           setProfile(data);
         }
       }
@@ -206,6 +257,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: errorMsg };
       }
 
+      const nationalPhone = getNationalDigits(phone);
+
+      // Pré-verificação se o perfil associado ao WhatsApp está bloqueado
+      const { data: checkProfile } = await supabase
+        .from('profiles')
+        .select('id, account_status')
+        .or(`whatsapp_normalized.eq.${nationalPhone},whatsapp.eq.${nationalPhone},whatsapp.eq.55${nationalPhone}`)
+        .maybeSingle();
+
+      if (checkProfile && checkProfile.account_status === 'blocked') {
+        const blockedMsg = 'Sua conta está suspensa pela administração. Entre em contato com o organizador.';
+        toast.error(blockedMsg);
+        return { success: false, error: blockedMsg };
+      }
+
       const authEmail = getSupabaseAuthEmail(phone);
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -215,16 +281,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Erro no login Supabase Auth:', error.message);
-        // Mensagem unificada para evitar enumeração de usuários
         const genericError = 'Telefone ou senha incorretos.';
         toast.error(genericError);
         return { success: false, error: genericError };
       }
 
       if (data.user) {
+        const userProfile = await fetchProfileForUser(data.user);
+        if (!userProfile || userProfile.account_status === 'blocked') {
+          await supabase.auth.signOut();
+          setSession(null);
+          setAuthUser(null);
+          setProfile(null);
+          const blockedMsg = 'Sua conta está suspensa pela administração. Entre em contato com o organizador.';
+          toast.error(blockedMsg);
+          return { success: false, error: blockedMsg };
+        }
+
         setAuthUser(data.user);
         setSession(data.session);
-        const userProfile = await fetchProfileForUser(data.user);
         setProfile(userProfile);
         toast.success(`Bem-vindo(a) de volta, ${userProfile?.nome || 'Craque'}!`);
         return { success: true };
@@ -242,7 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   /**
-   * Cadastro de Novo Jogador com Telefone e Senha
+   * Cadastro de Novo Jogador com Telefone, Senha e Convite Opcional
    */
   const signup = async ({
     nome,
@@ -250,6 +325,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password,
     apelido,
     genero = 'masculino',
+    inviteCode,
   }: SignupParams): Promise<AuthResponse> => {
     try {
       setIsLoading(true);
@@ -280,14 +356,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: errorMsg };
       }
 
-      const authEmail = getSupabaseAuthEmail(whatsapp);
       const nationalPhone = getNationalDigits(whatsapp);
+
+      // Validação prévia de convite (se fornecido)
+      let resolvedInviteId: string | null = null;
+      let resolvedCodeHash: string | null = null;
+
+      if (inviteCode && inviteCode.trim()) {
+        const normalizedCode = normalizeInviteCode(inviteCode);
+        const codeHash = await sha256Hex(normalizedCode);
+        resolvedCodeHash = codeHash;
+
+        const { data: inviteValidation, error: inviteErr } = await supabase.rpc('validate_invite_code', {
+          p_code_hash: codeHash,
+        });
+
+        if (inviteErr) {
+          console.error('Erro ao validar convite:', inviteErr);
+          toast.error('Erro ao validar convite. Tente novamente.');
+          return { success: false, error: 'Erro ao validar convite.' };
+        }
+
+        if (!inviteValidation?.valid) {
+          const inviteMsg = inviteValidation?.error || 'Código de convite inválido ou expirado.';
+          toast.error(inviteMsg);
+          return { success: false, error: inviteMsg };
+        }
+
+        resolvedInviteId = inviteValidation.invite_id;
+      }
 
       // Verificar se já existe perfil cadastrado com este telefone que já possui auth_id
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, nome, auth_id')
-        .or(`whatsapp.eq.${nationalPhone},whatsapp.eq.55${nationalPhone}`)
+        .select('id, nome, auth_id, account_status')
+        .or(`whatsapp_normalized.eq.${nationalPhone},whatsapp.eq.${nationalPhone},whatsapp.eq.55${nationalPhone}`)
         .maybeSingle();
 
       if (existingProfile?.auth_id) {
@@ -296,7 +399,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: errorMsg };
       }
 
-      // Criação oficial do usuário no Supabase Auth
+      if (existingProfile?.account_status === 'blocked') {
+        const errorMsg = 'Este número de telefone está temporariamente bloqueado.';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+
+      const authEmail = getSupabaseAuthEmail(whatsapp);
+
+      // Criação oficial do usuário no Supabase Auth com metadados de rastreabilidade
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: authEmail,
         password: password,
@@ -306,6 +417,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             apelido: apelido?.trim() || null,
             whatsapp: nationalPhone,
             genero: genero,
+            signup_origin: resolvedInviteId ? 'with_invite' : 'without_invite',
+            invite_id: resolvedInviteId,
           },
         },
       });
@@ -340,6 +453,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const userProfile = await fetchProfileForUser(authData.user);
         setProfile(userProfile);
+
+        // Se utilizou convite, consome atomicamente no banco
+        if (resolvedCodeHash && userProfile?.id) {
+          const { error: consumeErr } = await supabase.rpc('consume_invite_atomic', {
+            p_code_hash: resolvedCodeHash,
+            p_user_id: userProfile.id,
+          });
+          if (consumeErr) {
+            console.warn('Aviso: falha ao marcar convite como consumido:', consumeErr);
+          }
+        }
+
         toast.success(`Cadastro realizado com sucesso! Bem-vindo(a), ${nome.trim()}!`);
         return { success: true };
       }
@@ -350,6 +475,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const genericError = 'Ocorreu um erro no cadastro.';
       toast.error(genericError);
       return { success: false, error: genericError };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Recuperação de senha utilizando código temporário gerado pelo Superadmin
+   */
+  const recoverPassword = async (
+    phone: string,
+    code: string,
+    newPassword: string
+  ): Promise<AuthResponse> => {
+    try {
+      setIsLoading(true);
+
+      const { data, error } = await supabase.rpc('consume_password_recovery', {
+        p_whatsapp: phone,
+        p_code: code.trim(),
+        p_new_password: newPassword,
+      });
+
+      if (error) {
+        console.error('Erro na RPC consume_password_recovery:', error);
+        const msg = error.message || 'Erro ao processar a recuperação de senha.';
+        toast.error(msg);
+        return { success: false, error: msg };
+      }
+
+      if (!data?.success) {
+        const msg = data?.error || 'Código inválido ou expirado.';
+        toast.error(msg);
+        return { success: false, error: msg };
+      }
+
+      toast.success(data.message || 'Senha redefinida com sucesso! Você já pode entrar.');
+      return { success: true };
+    } catch (err) {
+      console.error('Exceção ao recuperar senha:', err);
+      const generic = 'Ocorreu um erro inesperado ao redefinir a senha.';
+      toast.error(generic);
+      return { success: false, error: generic };
     } finally {
       setIsLoading(false);
     }
@@ -395,12 +562,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile: profile,
         authUser,
         session,
-        isAuthenticated: !!session && !!profile,
-        isAdmin: profile?.role === 'admin' || profile?.role === 'super_admin',
-        isSuperAdmin: profile?.role === 'super_admin',
+        isAuthenticated: !!session && !!profile && profile.account_status !== 'blocked',
+        isAdmin: (profile?.role === 'admin' || profile?.role === 'super_admin') && profile?.account_status !== 'blocked',
+        isSuperAdmin: profile?.role === 'super_admin' && profile?.account_status !== 'blocked',
+        isBlocked: profile?.account_status === 'blocked',
         isLoading,
         login,
         signup,
+        recoverPassword,
         logout,
         refreshUser,
       }}

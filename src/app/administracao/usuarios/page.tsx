@@ -53,6 +53,8 @@ import {
   Sparkle,
   Activity,
   Award,
+  Ticket,
+  KeyRound,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -62,6 +64,12 @@ import {
   UserLeagueMembership,
 } from "@/components/ManageUserLeaguesModal";
 import { DeleteUserConfirmModal } from "@/components/admin/DeleteUserConfirmModal";
+import { CreateInviteModal } from "@/components/admin/CreateInviteModal";
+import { GenerateRecoveryModal } from "@/components/admin/GenerateRecoveryModal";
+import { ToggleBlockUserModal } from "@/components/admin/ToggleBlockUserModal";
+import { InvitesTabSection } from "@/components/admin/InvitesTabSection";
+import { RecoveriesTabSection } from "@/components/admin/RecoveriesTabSection";
+import { AdminAuditTabSection } from "@/components/admin/AdminAuditTabSection";
 import { getPlayerRating, getRatingTier } from "@/lib/playerRatingHelper";
 import { useLeague } from "@/context/LeagueContext";
 
@@ -83,7 +91,9 @@ export default function UserManagementPage() {
   const [leaguesList, setLeaguesList] = useState<League[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [activeTab, setActiveTab] = useState<"users" | "history">("users");
+  const [activeTab, setActiveTab] = useState<
+    "users" | "invites" | "recoveries" | "history"
+  >("users");
 
   // Estado do Acordeon de Usuários (Apenas 1 aberto por vez para performance e limpeza)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
@@ -94,6 +104,15 @@ export default function UserManagementPage() {
   // Filtros e Busca
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [originFilter, setOriginFilter] = useState<
+    "all" | "with_invite" | "without_invite"
+  >("all");
+  const [recoveryTargetUser, setRecoveryTargetUser] = useState<Profile | null>(
+    null,
+  );
+  const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
+  const [blockTargetUser, setBlockTargetUser] = useState<Profile | null>(null);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [roleFilter, setRoleFilter] = useState<
     "all" | "player" | "admin" | "super_admin"
   >("all");
@@ -173,7 +192,14 @@ export default function UserManagementPage() {
   // Redefinir página atual quando qualquer filtro mudar
   useEffect(() => {
     setCurrentPage(1);
-  }, [roleFilter, statusFilter, selectedLeagueFilter, sportFilter, sortFilter]);
+  }, [
+    roleFilter,
+    statusFilter,
+    selectedLeagueFilter,
+    sportFilter,
+    sortFilter,
+    originFilter,
+  ]);
 
   // Carregar dados dos usuários, ligas e auditoria
   const loadData = useCallback(async () => {
@@ -414,7 +440,10 @@ export default function UserManagementPage() {
 
     // Status real
     const blocked = usersList.filter(
-      (u) => u.can_create_leagues === false || u.is_blocked === true,
+      (u) =>
+        u.account_status === "blocked" ||
+        u.can_create_leagues === false ||
+        u.is_blocked === true,
     ).length;
     const pending = usersList.filter(
       (u) =>
@@ -448,7 +477,11 @@ export default function UserManagementPage() {
 
   // Helper para determinar o status real do usuário
   const getUserStatus = (u: UserWithLeagueInfo): "active" | "blocked" | "pending" => {
-    if (u.can_create_leagues === false || u.is_blocked === true) {
+    if (
+      u.account_status === "blocked" ||
+      u.can_create_leagues === false ||
+      u.is_blocked === true
+    ) {
       return "blocked";
     }
     if (
@@ -468,6 +501,7 @@ export default function UserManagementPage() {
     if (statusFilter !== "all") count++;
     if (selectedLeagueFilter !== "all") count++;
     if (sportFilter !== "all") count++;
+    if (originFilter !== "all") count++;
     if (sortFilter !== "name_asc") count++;
     return count;
   }, [
@@ -476,6 +510,7 @@ export default function UserManagementPage() {
     statusFilter,
     selectedLeagueFilter,
     sportFilter,
+    originFilter,
     sortFilter,
   ]);
 
@@ -487,6 +522,7 @@ export default function UserManagementPage() {
     setStatusFilter("all");
     setSelectedLeagueFilter("all");
     setSportFilter("all");
+    setOriginFilter("all");
     setSortFilter("name_asc");
     setCurrentPage(1);
   };
@@ -530,7 +566,20 @@ export default function UserManagementPage() {
         if (uStatus !== statusFilter) return false;
       }
 
-      // 5. Busca por texto (Nome, Apelido, WhatsApp / Telefone)
+      // 5. Filtro por Origem de Cadastro
+      if (originFilter !== "all") {
+        if (originFilter === "with_invite" && u.signup_origin !== "with_invite") {
+          return false;
+        }
+        if (
+          originFilter === "without_invite" &&
+          u.signup_origin === "with_invite"
+        ) {
+          return false;
+        }
+      }
+
+      // 6. Busca por texto (Nome, Apelido, WhatsApp / Telefone)
       if (debouncedSearch.trim()) {
         const cleanQuery = debouncedSearch.toLowerCase().trim();
         const digitsQuery = cleanPhoneNumber(cleanQuery);
@@ -590,6 +639,7 @@ export default function UserManagementPage() {
     statusFilter,
     selectedLeagueFilter,
     sportFilter,
+    originFilter,
     sortFilter,
   ]);
 
@@ -1096,12 +1146,12 @@ export default function UserManagementPage() {
           </motion.div>
         </div>
 
-        {/* Abas: Usuários vs Histórico de Auditoria (Super Admin) */}
+        {/* Abas do Super Administrador: Usuários, Convites, Recuperações e Auditoria */}
         {isSuperAdmin && (
-          <div className="flex items-center gap-2 p-1 bg-slate-200/60 dark:bg-slate-850 rounded-2xl max-w-sm">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-850 rounded-2xl overflow-x-auto scrollbar-none max-w-full">
             <button
               onClick={() => setActiveTab("users")}
-              className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
                 activeTab === "users"
                   ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -1111,20 +1161,42 @@ export default function UserManagementPage() {
               <span>Usuários ({counters.total})</span>
             </button>
             <button
-              onClick={() => setActiveTab("history")}
-              className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "history"
+              onClick={() => setActiveTab("invites")}
+              className={`px-3 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === "invites"
+                  ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Convites</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("recoveries")}
+              className={`px-3 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === "recoveries"
                   ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
+              <KeyRound className="w-4 h-4" />
+              <span>Recuperações</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`px-3 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === "history"
+                  ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
               <History className="w-4 h-4" />
-              <span>Auditoria ({auditLogs.length})</span>
+              <span>Auditoria</span>
             </button>
           </div>
         )}
 
-        {activeTab === "users" ? (
+        {activeTab === "users" && (
           <div className="space-y-4">
             {/* ──────────────────────────────────────────────────────────────────────
                 3. PAINEL DE FILTROS AVANÇADO EM ACORDEON
@@ -1290,8 +1362,26 @@ export default function UserManagementPage() {
                         </select>
                       </div>
 
-                      {/* 5. Ordenar por */}
-                      <div className="space-y-1.5 sm:col-span-2">
+                      {/* 5. Origem do Cadastro */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Origem do Cadastro
+                        </label>
+                        <select
+                          value={originFilter}
+                          onChange={(e) =>
+                            setOriginFilter(e.target.value as any)
+                          }
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          <option value="all">Todas as origens</option>
+                          <option value="with_invite">🎟️ Com convite</option>
+                          <option value="without_invite">👤 Sem convite</option>
+                        </select>
+                      </div>
+
+                      {/* 6. Ordenar por */}
+                      <div className="space-y-1.5">
                         <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           Ordenar por
                         </label>
@@ -1492,6 +1582,17 @@ export default function UserManagementPage() {
                         {/* Badges + Seta do Acordeon */}
                         <div className="flex items-center gap-2 shrink-0">
                           <div className="hidden sm:flex items-center gap-1.5">
+                            {item.signup_origin === "with_invite" ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                                <Ticket className="w-2.5 h-2.5" />
+                                <span>Convite</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30 flex items-center gap-1">
+                                <User className="w-2.5 h-2.5" />
+                                <span>Direto</span>
+                              </span>
+                            )}
                             {getRoleBadge(item.role)}
                             {getStatusBadge(userStatus)}
                           </div>
@@ -1520,6 +1621,17 @@ export default function UserManagementPage() {
                           >
                             {/* Badges Mobile */}
                             <div className="flex sm:hidden items-center gap-1.5 flex-wrap pb-1">
+                              {item.signup_origin === "with_invite" ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                                  <Ticket className="w-2.5 h-2.5" />
+                                  <span>Convite</span>
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30 flex items-center gap-1">
+                                  <User className="w-2.5 h-2.5" />
+                                  <span>Direto</span>
+                                </span>
+                              )}
                               {getRoleBadge(item.role)}
                               {getStatusBadge(userStatus)}
                             </div>
@@ -1598,6 +1710,25 @@ export default function UserManagementPage() {
 
                                 <div>
                                   <span className="text-[11px] text-slate-400 block font-medium">
+                                    Origem do Cadastro:
+                                  </span>
+                                  <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                                    {item.signup_origin === "with_invite" ? (
+                                      <>
+                                        <Ticket className="w-3 h-3 text-purple-500" />
+                                        <span>Com convite</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <User className="w-3 h-3 text-slate-400" />
+                                        <span>Cadastro direto</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <span className="text-[11px] text-slate-400 block font-medium">
                                     Data de Cadastro:
                                   </span>
                                   <span className="font-bold text-slate-900 dark:text-white">
@@ -1608,6 +1739,46 @@ export default function UserManagementPage() {
                                     )}
                                   </span>
                                 </div>
+
+                                <div>
+                                  <span className="text-[11px] text-slate-400 block font-medium">
+                                    Último Acesso:
+                                  </span>
+                                  <span className="font-bold text-slate-900 dark:text-white">
+                                    {item.last_login_at
+                                      ? format(
+                                          new Date(item.last_login_at),
+                                          "dd/MM/yyyy HH:mm",
+                                          { locale: ptBR },
+                                        )
+                                      : "Não registrado / Legado"}
+                                  </span>
+                                </div>
+
+                                {item.account_status === "blocked" && (
+                                  <div className="col-span-full p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300">
+                                    <div className="flex items-center gap-1.5 font-bold">
+                                      <Ban className="w-3.5 h-3.5 text-red-500" />
+                                      <span>Conta Bloqueada no Sistema</span>
+                                      {item.blocked_at && (
+                                        <span className="text-[10px] opacity-75 font-normal">
+                                          (em{" "}
+                                          {format(
+                                            new Date(item.blocked_at),
+                                            "dd/MM/yyyy HH:mm",
+                                            { locale: ptBR },
+                                          )}
+                                          )
+                                        </span>
+                                      )}
+                                    </div>
+                                    {item.status_reason && (
+                                      <p className="text-[11px] mt-0.5">
+                                        Motivo: {item.status_reason}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -1901,6 +2072,53 @@ export default function UserManagementPage() {
                                     <span>Vínculos</span>
                                   </button>
 
+                                  {/* Recuperar Senha (Super Admin) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRecoveryTargetUser(item);
+                                      setIsRecoveryModalOpen(true);
+                                    }}
+                                    className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs transition-colors cursor-pointer flex items-center gap-1 border border-amber-500/20"
+                                    title="Gerar código temporário de 6 dígitos para redefinição de senha"
+                                  >
+                                    <KeyRound className="w-3.5 h-3.5" />
+                                    <span>Recuperar Senha</span>
+                                  </button>
+
+                                  {/* Bloquear / Reativar Conta */}
+                                  {!isCurrentUser && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setBlockTargetUser(item);
+                                        setIsBlockModalOpen(true);
+                                      }}
+                                      className={`px-2.5 py-1.5 rounded-xl font-extrabold text-xs transition-colors cursor-pointer flex items-center gap-1 border ${
+                                        item.account_status === "blocked"
+                                          ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                          : "bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"
+                                      }`}
+                                      title={
+                                        item.account_status === "blocked"
+                                          ? "Reativar acesso deste usuário"
+                                          : "Bloquear acesso deste usuário"
+                                      }
+                                    >
+                                      {item.account_status === "blocked" ? (
+                                        <>
+                                          <Unlock className="w-3.5 h-3.5 text-emerald-500" />
+                                          <span>Reativar</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Ban className="w-3.5 h-3.5 text-red-500" />
+                                          <span>Bloquear</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+
                                   {/* Alterar Cargo Global */}
                                   {!isCurrentUser && (
                                     <button
@@ -2016,72 +2234,27 @@ export default function UserManagementPage() {
               </div>
             )}
           </div>
-        ) : (
-          /* ──────────────────────────────────────────────────────────────────────
-              6. ABA DE HISTÓRICO DE AUDITORIA (SUPER ADMIN)
-          ────────────────────────────────────────────────────────────────────── */
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-amber-500" />
-                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                  Registro de Auditoria de Ações Administrativas
-                </h3>
-              </div>
-              <span className="text-xs text-slate-400 font-bold">
-                {auditLogs.length} registros
-              </span>
-            </div>
+        )}
 
-            {auditLogs.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">
-                Nenhum registro de auditoria encontrado.
-              </p>
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {auditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="py-3 flex items-start justify-between gap-3 text-xs"
-                  >
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {log.metadata?.actor_name ||
-                            log.user?.nome ||
-                            "Administrador"}
-                        </span>
-                        <span className="text-slate-400">•</span>
-                        <span className="text-brand-600 dark:text-brand-400 font-semibold">
-                          {log.action}
-                        </span>
-                      </div>
-                      <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                        {log.metadata?.target_name
-                          ? `Alvo: ${log.metadata.target_name}`
-                          : ""}
-                        {log.metadata?.league_name
-                          ? ` • Liga: ${log.metadata.league_name}`
-                          : ""}
-                        {log.metadata?.from_league && log.metadata?.to_league
-                          ? ` • Transferido de "${log.metadata.from_league}" para "${log.metadata.to_league}"`
-                          : ""}
-                        {log.metadata?.role
-                          ? ` • Papel: ${log.metadata.role}`
-                          : ""}
-                        {log.metadata?.rating
-                          ? ` • Nota: ${log.metadata.rating}/10`
-                          : ""}
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-slate-400 shrink-0">
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* ──────────────────────────────────────────────────────────────────────
+            6. ABA DE CONVITES (SUPER ADMIN)
+        ────────────────────────────────────────────────────────────────────── */}
+        {activeTab === "invites" && isSuperAdmin && (
+          <InvitesTabSection onDataChanged={loadData} />
+        )}
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            7. ABA DE RECUPERAÇÕES DE SENHA (SUPER ADMIN)
+        ────────────────────────────────────────────────────────────────────── */}
+        {activeTab === "recoveries" && isSuperAdmin && (
+          <RecoveriesTabSection />
+        )}
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            8. ABA DE AUDITORIA COMPLETA (SUPER ADMIN)
+        ────────────────────────────────────────────────────────────────────── */}
+        {activeTab === "history" && isSuperAdmin && (
+          <AdminAuditTabSection />
         )}
       </main>
 
@@ -2129,6 +2302,28 @@ export default function UserManagementPage() {
         targetUser={userToDelete}
         currentUserId={user?.id}
         onUserDeleted={loadData}
+      />
+
+      {/* Modal de Geração de Código de Recuperação de Senha (Super Admin) */}
+      <GenerateRecoveryModal
+        isOpen={isRecoveryModalOpen}
+        onClose={() => {
+          setIsRecoveryModalOpen(false);
+          setRecoveryTargetUser(null);
+        }}
+        targetUser={recoveryTargetUser}
+        onSuccess={loadData}
+      />
+
+      {/* Modal de Bloqueio/Reativação de Usuário (Super Admin) */}
+      <ToggleBlockUserModal
+        isOpen={isBlockModalOpen}
+        onClose={() => {
+          setIsBlockModalOpen(false);
+          setBlockTargetUser(null);
+        }}
+        targetUser={blockTargetUser}
+        onSuccess={loadData}
       />
 
       {/* Modal de Alteração de Cargo Global (Super Admin) */}

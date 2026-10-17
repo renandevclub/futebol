@@ -23,14 +23,29 @@ export type VoleiPosition =
 
 export type VoleiDominantHand = 'Destro' | 'Canhoto' | 'Ambidestro' | 'Direita' | 'Esquerda';
 
+export type AccountStatus = 'active' | 'blocked' | 'pending';
+export type SignupOrigin = 'with_invite' | 'without_invite';
+
 export interface Profile {
   id: string;
   auth_id?: string | null;
   nome: string;
   apelido?: string | null;
   whatsapp?: string | null;
+  whatsapp_normalized?: string | null;
   genero?: 'masculino' | 'feminino' | null;
   role: UserRole;
+  account_status?: AccountStatus;
+  signup_origin?: SignupOrigin;
+  invite_id?: string | null;
+  blocked_at?: string | null;
+  blocked_by?: string | null;
+  unblocked_at?: string | null;
+  unblocked_by?: string | null;
+  last_login_at?: string | null;
+  last_password_recovery_at?: string | null;
+  status_reason?: string | null;
+  updated_at?: string;
   avatar_url?: string | null;
   cover_url?: string | null;
   bio?: string | null;
@@ -54,6 +69,57 @@ export interface Profile {
   nivel_qualidade?: number | null;
   last_activity?: string;
   created_at: string;
+}
+
+export interface UserInvite {
+  id: string;
+  code_hash: string;
+  code_hint?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  expires_at: string;
+  revoked_at?: string | null;
+  revoked_by?: string | null;
+  used_at?: string | null;
+  used_by?: string | null;
+  status: 'available' | 'used' | 'expired' | 'revoked';
+  max_uses: number;
+  use_count: number;
+  note?: string | null;
+  creator?: Profile | null;
+  consumer?: Profile | null;
+}
+
+export interface PasswordRecoveryRequest {
+  id: string;
+  target_profile_id: string;
+  code_hash: string;
+  created_by?: string | null;
+  created_at: string;
+  expires_at: string;
+  used_at?: string | null;
+  invalidated_at?: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  last_attempt_at?: string | null;
+  status: 'pending' | 'used' | 'expired' | 'invalidated' | 'failed';
+  target_profile?: Profile | null;
+  creator?: Profile | null;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  actor_user_id?: string | null;
+  target_user_id?: string | null;
+  action: string;
+  entity_type: string;
+  entity_id?: string | null;
+  metadata?: Record<string, any> | null;
+  success: boolean;
+  error_code?: string | null;
+  created_at: string;
+  actor?: Profile | null;
+  target?: Profile | null;
 }
 
 export interface AuditLog {

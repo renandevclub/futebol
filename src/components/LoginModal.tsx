@@ -16,9 +16,12 @@ import {
   MessageCircle,
   ShieldCheck,
   CheckCircle2,
+  Ticket,
+  KeyRound,
+  ShieldAlert,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatPhoneDisplay, validatePhoneNumber } from "@/lib/phoneUtils";
+import { formatPhoneDisplay, validatePhoneNumber, cleanPhoneNumber } from "@/lib/phoneUtils";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -26,7 +29,7 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const { login, signup } = useAuth();
+  const { login, signup, recoverPassword } = useAuth();
 
   const [mode, setMode] = useState<"login" | "register">("login");
 
@@ -34,6 +37,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [nome, setNome] = useState("");
   const [apelido, setApelido] = useState("");
   const [genero, setGenero] = useState<"masculino" | "feminino">("masculino");
+  const [inviteCode, setInviteCode] = useState("");
 
   // Campos Comuns
   const [phone, setPhone] = useState("");
@@ -47,12 +51,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Estados do Fluxo de Recuperação
+  const [recoveryTab, setRecoveryTab] = useState<"code" | "whatsapp">("code");
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState("");
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [isRecoverySubmitting, setIsRecoverySubmitting] = useState(false);
+
   if (!isOpen) return null;
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneDisplay(e.target.value);
     setPhone(formatted);
     if (errorMessage) setErrorMessage(null);
+  };
+
+  const handleRecoveryPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneDisplay(e.target.value);
+    setRecoveryPhone(formatted);
+    if (recoveryError) setRecoveryError(null);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -115,6 +135,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       whatsapp: phone,
       password: password,
       genero: genero,
+      inviteCode: inviteCode.trim() || undefined,
     });
     setIsSubmitting(false);
 
@@ -122,6 +143,46 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       onClose();
     } else {
       setErrorMessage(result.error || "Não foi possível realizar o cadastro.");
+    }
+  };
+
+  const handleRecoverySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+
+    const validation = validatePhoneNumber(recoveryPhone);
+    if (!validation.isValid) {
+      setRecoveryError(validation.error || "Número de WhatsApp inválido.");
+      return;
+    }
+
+    const cleanCode = recoveryCode.trim();
+    if (!cleanCode || cleanCode.length < 6) {
+      setRecoveryError("O código de recuperação deve conter 6 dígitos.");
+      return;
+    }
+
+    if (recoveryPassword.length < 8) {
+      setRecoveryError("A nova senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+
+    if (recoveryPassword !== recoveryConfirmPassword) {
+      setRecoveryError("A confirmação de senha não confere com a nova senha digitada.");
+      return;
+    }
+
+    setIsRecoverySubmitting(true);
+    const result = await recoverPassword(recoveryPhone, cleanCode, recoveryPassword);
+    setIsRecoverySubmitting(false);
+
+    if (result.success) {
+      setShowForgotModal(false);
+      setPhone(recoveryPhone);
+      setPassword("");
+      setMode("login");
+    } else {
+      setRecoveryError(result.error || "Não foi possível redefinir sua senha.");
     }
   };
 
@@ -398,6 +459,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               </p>
             </div>
 
+            {/* Campo Opcional de Convite */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Código de Convite <span className="text-slate-400 font-normal">(Opcional)</span>
+                </label>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Não obrigatório
+                </span>
+              </div>
+              <div className="relative">
+                <Ticket className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  placeholder="Ex: FV-9K3M7A (deixe em branco se não tiver)"
+                  value={inviteCode}
+                  onChange={(e) => {
+                    setInviteCode(e.target.value.toUpperCase());
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Possui convite do Super Administrador? Digite aqui para vincular sua origem.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -485,50 +574,210 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </form>
         )}
 
-        {/* Modal de Ajuda / Esqueci a Senha */}
+        {/* Modal Interativo de Recuperação de Senha com Código Temporário */}
         {showForgotModal && (
           <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
-                <HelpCircle className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">
-                Recuperação de Senha Segura
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Por motivos de segurança e privacidade dos jogadores, a
-                redefinição de acesso é realizada diretamente com os{" "}
-                <strong>organizadores oficiais da pelada</strong>.
-              </p>
-
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 text-left space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-brand-600 dark:text-brand-400">
-                  <ShieldCheck className="w-4 h-4 shrink-0" />
-                  <span>Procedimento Rápido:</span>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                      Recuperação de Senha
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Código temporário fornecido pelo Administrador
+                    </p>
+                  </div>
                 </div>
-                <p>1. Solicite a redefinição pelo WhatsApp do Organizador.</p>
-                <p>2. Confirme sua titularidade do número cadastrado.</p>
-                <p>3. Acesse novamente definindo sua nova senha.</p>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <a
-                  href="https://wa.me/5591993370456?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20para%20redefinir%20minha%20senha%20no%20F%26V%20Sports."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Falar com o Organizador no WhatsApp</span>
-                </a>
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(false)}
-                  className="w-full py-2.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
-                  Voltar ao Login
+                  <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Seletor de Modo: Tenho Código / Pedir Código */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryTab("code");
+                    setRecoveryError(null);
+                  }}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    recoveryTab === "code"
+                      ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Digitar Código</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryTab("whatsapp");
+                    setRecoveryError(null);
+                  }}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    recoveryTab === "whatsapp"
+                      ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Pedir Código</span>
+                </button>
+              </div>
+
+              {recoveryError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-start gap-2 text-xs text-red-600 dark:text-red-400 font-semibold">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{recoveryError}</span>
+                </div>
+              )}
+
+              {recoveryTab === "code" ? (
+                /* Formulário de Redefinição com Código */
+                <form onSubmit={handleRecoverySubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Telefone (WhatsApp) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        required
+                        placeholder="(91) 99999-9999"
+                        value={recoveryPhone}
+                        onChange={handleRecoveryPhoneChange}
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Código de 6 Dígitos <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        required
+                        placeholder="Ex: 842915"
+                        value={recoveryCode}
+                        onChange={(e) => {
+                          setRecoveryCode(e.target.value.replace(/\D/g, ""));
+                          if (recoveryError) setRecoveryError(null);
+                        }}
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Válido por 30 minutos após a geração pelo Administrador.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Nova Senha <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type={showRecoveryPassword ? "text" : "password"}
+                        required
+                        placeholder="Mínimo 8 caracteres"
+                        value={recoveryPassword}
+                        onChange={(e) => setRecoveryPassword(e.target.value)}
+                        className="w-full pl-10 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
+                        className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        {showRecoveryPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Confirmar Nova Senha <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type={showRecoveryPassword ? "text" : "password"}
+                        required
+                        placeholder="Repita a nova senha"
+                        value={recoveryConfirmPassword}
+                        onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="submit"
+                    disabled={isRecoverySubmitting}
+                    className="w-full py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-3 cursor-pointer"
+                  >
+                    {isRecoverySubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Redefinindo Senha...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Confirmar Nova Senha</span>
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+              ) : (
+                /* Solicitar Código ao Administrador no WhatsApp */
+                <div className="space-y-3 text-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-left">
+                    Para garantir a segurança da sua conta, o código de recuperação é gerado individualmente pelo <strong>Super Administrador</strong>.
+                  </p>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 text-left space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-brand-600 dark:text-brand-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      <span>Como funciona:</span>
+                    </div>
+                    <p>1. Clique no botão abaixo para abrir a conversa oficial no WhatsApp.</p>
+                    <p>2. O Administrador confirmará seu cadastro e gerará um código de 6 dígitos.</p>
+                    <p>3. Volte nesta tela na aba &quot;Digitar Código&quot; e defina sua nova senha.</p>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <a
+                      href="https://wa.me/5591993370456?text=Ol%C3%A1%2C%20preciso%20de%20um%20c%C3%B3digo%20de%20recupera%C3%A7%C3%A3o%20de%20senha%20no%20F%26V%20Sports."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Falar com o Organizador no WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

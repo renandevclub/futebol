@@ -135,3 +135,28 @@ export function getSupabaseAuthEmail(phone?: string | null): string {
   const national = getNationalDigits(phone);
   return `phone_${national}@auth.futresenha.app`;
 }
+
+/**
+ * Calcula o hash SHA-256 de uma string utilizando a Web Crypto API (nativa em navegadores e Node 18+)
+ */
+export async function sha256Hex(text: string): Promise<string> {
+  const clean = text.trim();
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    const msgUint8 = new TextEncoder().encode(clean);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  // Fallback caso executado em ambiente node sem window
+  const cryptoModule = await import('crypto');
+  return cryptoModule.createHash('sha256').update(clean).digest('hex');
+}
+
+/**
+ * Formata um código de convite para caixa alta e sem espaços
+ */
+export function normalizeInviteCode(code?: string | null): string {
+  if (!code) return '';
+  return code.trim().toUpperCase();
+}
+
