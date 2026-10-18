@@ -6,9 +6,10 @@ import React, { useState, useEffect } from 'react';
 import { Profile, Post, PostVisibility } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useLeague } from '@/context/LeagueContext';
 import { compressImage } from '@/lib/mediaCompressor';
 import { UploadProgress } from '@/components/UploadProgress';
-import { X, Image as ImageIcon, Video, Send, Sparkles, Smile, MapPin, Users, Lock, Globe, Pencil } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Send, Sparkles, Smile, MapPin, Users, Lock, Globe, Pencil, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreatePostModalProps {
@@ -17,6 +18,8 @@ interface CreatePostModalProps {
   onPostCreated: () => void;
   targetUserId?: string; // Se preenchido, publica no mural deste usuário
   postToEdit?: Post | null;
+  leagueId?: string | null;
+  leagueName?: string | null;
 }
 
 const COMMON_EMOJIS = ['🏐', '🔥', '👏', '😍', '💪', '🏆', '🎉', '💯', '❤️', '⚡', '🥇', '⭐'];
@@ -27,8 +30,15 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   onPostCreated,
   targetUserId,
   postToEdit,
+  leagueId,
+  leagueName,
 }) => {
   const { user } = useAuth();
+  const { currentLeague, leagues } = useLeague();
+  
+  const effectiveLeagueId = leagueId || postToEdit?.organization_id || (!targetUserId ? currentLeague?.id : null) || null;
+  const effectiveLeague = effectiveLeagueId ? (leagues.find((l) => l.id === effectiveLeagueId) || currentLeague) : null;
+  const displayLeagueName = leagueName || effectiveLeague?.name || null;
   const [texto, setTexto] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -146,6 +156,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         const { error: updateError } = await supabase
           .from('posts')
           .update({
+            organization_id: postToEdit.organization_id || effectiveLeagueId,
             texto: texto.trim() || null,
             imagem_url: imagemUrl || postToEdit.imagem_url,
             video_url: videoUrl || postToEdit.video_url,
@@ -162,6 +173,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           .from('posts')
           .insert({
             author_id: user.id,
+            organization_id: effectiveLeagueId,
             target_user_id: targetUserId || null,
             texto: texto.trim() || null,
             imagem_url: imagemUrl,
@@ -231,6 +243,13 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           </motion.button>
         </div>
 
+        {displayLeagueName && !targetUserId && (
+          <div className="flex items-center gap-2 px-3.5 py-2 bg-brand-50/70 dark:bg-brand-950/40 border border-brand-200/80 dark:border-brand-800/80 rounded-2xl text-xs font-bold text-brand-700 dark:text-brand-300">
+            <Shield className="w-4 h-4 text-brand-500 shrink-0" />
+            <span className="truncate">Publicação no feed de: <strong>{displayLeagueName}</strong></span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seletor de Visibilidade */}
           <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -243,8 +262,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               onChange={(e) => setVisibilidade(e.target.value as PostVisibility)}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold px-3 py-1 rounded-xl focus:outline-none"
             >
-              <option value="publica">🌐 Pública</option>
-              <option value="participantes">🏐 Somente Participantes</option>
+              <option value="publica">🏐 Visível para toda a Liga</option>
+              <option value="participantes">🛡️ Somente Participantes Oficiais</option>
               <option value="amigos">👥 Somente Amigos</option>
               <option value="privada">🔒 Somente Eu (Privada)</option>
             </select>

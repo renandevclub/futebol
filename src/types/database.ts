@@ -146,6 +146,7 @@ export type PostVisibility = 'publica' | 'participantes' | 'amigos' | 'privada';
 export interface Post {
   id: string;
   author_id: string;
+  organization_id?: string | null;
   target_user_id?: string | null;
   texto?: string | null;
   imagem_url?: string | null;
@@ -157,6 +158,7 @@ export interface Post {
   created_at: string;
   author?: Profile;
   target_user?: Profile;
+  organization?: League | null;
   original_post?: Post;
   comments_count?: number;
   reactions_count?: number;

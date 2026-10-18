@@ -48,11 +48,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, post, o
     try {
       setLoading(true);
 
-      // Criar nova postagem com referência ao post original
+      // Criar nova postagem com referência ao post original vinculado à mesma liga
       const { data: newPost, error: postError } = await supabase
         .from('posts')
         .insert({
           author_id: user.id,
+          organization_id: post.organization_id || null,
           target_user_id: shareTarget === 'friend_wall' ? targetUserId : null,
           texto: shareText.trim() || `Compartilhou uma publicação de ${post.author?.nome || 'um participante'}.`,
           original_post_id: post.id,

@@ -102,7 +102,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
         const [{ data: mData }, { data: membersData }, { data: poData }, { data: bData }] = await Promise.all([
           supabase.from('matches').select('*').order('data', { ascending: false }),
           supabase.from('organization_members').select('*, user:user_id(*), organization:organization_id(*)'),
-          supabase.from('posts').select('*, author:author_id(*)').order('created_at', { ascending: false }),
+          supabase.from('posts').select('*, author:author_id(*), organization:organization_id(*)').order('created_at', { ascending: false }),
           supabase.from('badges').select('*').order('name'),
         ]);
 
@@ -142,11 +142,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
           .in('organization_id', myLeagueIds)
           .order('data', { ascending: false });
 
-        // 2. Posts criados pelo administrador
+        // 2. Posts das ligas deste administrador
         const { data: poData } = await supabase
           .from('posts')
-          .select('*, author:author_id(*)')
-          .eq('author_id', user.id)
+          .select('*, author:author_id(*), organization:organization_id(*)')
+          .in('organization_id', myLeagueIds)
           .order('created_at', { ascending: false });
 
         // 3. Badges disponíveis
@@ -918,7 +918,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
             posts.length === 0 ? (
               <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
                 <p className="text-slate-400 font-medium">
-                  {isSuperAdmin ? 'Nenhum post publicado no feed.' : 'Nenhuma postagem criada por você no feed.'}
+                  {isSuperAdmin ? 'Nenhum post publicado nas ligas.' : 'Nenhuma postagem encontrada nas suas ligas.'}
                 </p>
               </div>
             ) : (
@@ -928,15 +928,24 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
                     key={post.id}
                     className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3"
                   >
-                    <div className="space-y-1 min-w-0 flex-1">
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {post.organization?.name && (
+                          <span className="px-2 py-0.5 text-[10px] font-extrabold bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800 rounded-md">
+                            🛡️ {post.organization.name}
+                          </span>
+                        )}
+                        {post.author?.nome && (
+                          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                            👤 {post.author.nome}
+                          </span>
+                        )}
+                      </div>
                       <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs break-words">
                         {post.texto || '[Publicação com Mídia]'}
                       </p>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
                         <span>📅 {new Date(post.created_at).toLocaleDateString()}</span>
-                        {isSuperAdmin && post.author?.nome && (
-                          <span>• 👤 {post.author.nome}</span>
-                        )}
                       </div>
                     </div>
 

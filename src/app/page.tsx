@@ -51,6 +51,7 @@ import { useLeague } from "@/context/LeagueContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { League, Profile } from "@/types/database";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
@@ -65,6 +66,7 @@ export default function Home() {
     isLoading: isLeaguesLoading,
     canManageLeague,
     canCreateLeagues,
+    joinLeagueWithPassword,
   } = useLeague();
 
   // Abas dentro do Ambiente da Liga Ativa
@@ -1349,11 +1351,27 @@ export default function Home() {
               </div>
             )}
 
-            {/* ABA 3: FEED & RESENHA */}
+            {/* ABA 3: FEED & RESENHA EXCLUSIVO DA LIGA */}
             {leagueTab === "feed" && (
               <FeedSection
+                leagueId={currentLeague?.id}
+                leagueName={currentLeague?.name}
                 onOpenCreatePost={() => setIsCreatePostOpen(true)}
                 onOpenLogin={() => setIsLoginOpen(true)}
+                onJoinLeagueRequest={async () => {
+                  if (!currentLeague) return;
+                  if (currentLeague.is_blocked) {
+                    setBlockedLeagueToView(currentLeague);
+                  } else if (currentLeague.has_password) {
+                    setLeagueToEnterWithPassword(currentLeague);
+                    setIsPasswordModalOpen(true);
+                  } else {
+                    const res = await joinLeagueWithPassword(currentLeague.id);
+                    if (res.success) {
+                      toast.success('Você entrou na liga com sucesso! 🏆');
+                    }
+                  }
+                }}
               />
             )}
 
@@ -1497,6 +1515,8 @@ export default function Home() {
         isOpen={isCreatePostOpen}
         onClose={() => setIsCreatePostOpen(false)}
         onPostCreated={() => {}}
+        leagueId={currentLeague?.id}
+        leagueName={currentLeague?.name}
       />
 
       <CreateMatchModal
