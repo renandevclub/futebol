@@ -515,7 +515,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
 
         // Notificar participantes sobre início do jogo
         if (match && participants.length > 0) {
-          const participantIds = participants.map((p) => p.user_id).filter(Boolean);
+          const participantIds = participants.map((p) => p.user_id).filter((id): id is string => !!id);
           const teamAInfo = getTeamInfo(selectedTeamA);
           const teamBInfo = getTeamInfo(selectedTeamB);
           void notifyGameStarted(match, nextGameNumber, teamAInfo.name, teamBInfo.name, participantIds);
@@ -600,7 +600,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
 
         // Notificar participantes sobre ponto no vôlei
         if (playerId && participants.length > 0) {
-          const participantIds = participants.map((p) => p.user_id).filter(Boolean);
+          const participantIds = participants.map((p) => p.user_id).filter((id): id is string => !!id);
           const scorerPart = participants.find((p) => p.user_id === playerId);
           const scorerProfile = scorerPart?.user || ({ id: playerId, nome: 'Atleta' } as Profile);
           void notifyGoalScored(match, scorerProfile, teamInfo.name, participantIds, true);
@@ -682,7 +682,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
 
         // Notificar participantes sobre o gol marcado
         if (scorerId && participants.length > 0) {
-          const participantIds = participants.map((p) => p.user_id).filter(Boolean);
+          const participantIds = participants.map((p) => p.user_id).filter((id): id is string => !!id);
           const scorerPart = participants.find((p) => p.user_id === scorerId);
           const scorerProfile = scorerPart?.user || ({ id: scorerId, nome: 'Jogador' } as Profile);
           void notifyGoalScored(match, scorerProfile, teamInfo.name, participantIds, false);
@@ -1062,7 +1062,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
       const data = await getMatchChampionData(match.id, match);
       setChampionData(data);
       if (data?.teamInfo?.name && participants.length > 0) {
-        const participantIds = participants.map((p) => p.user_id).filter(Boolean);
+        const participantIds = participants.map((p) => p.user_id).filter((id): id is string => !!id);
         void notifyChampionDeclared(match, data.teamInfo.name, participantIds);
       }
     } catch (err) {

@@ -832,7 +832,7 @@ export default function MatchDetailPage({
   const handleStartEditPlayer = (p: MatchParticipant) => {
     if (!isAdmin) return;
     setEditingParticipantId(p.id);
-    setEditingNameValue(p.user?.nome || "");
+    setEditingNameValue(p.user?.nome || p.guest_name || "");
   };
 
   const handleSavePlayerName = async (participant: MatchParticipant) => {
@@ -843,7 +843,8 @@ export default function MatchDetailPage({
       return;
     }
 
-    if (cleanName === participant.user?.nome) {
+    const currentName = participant.user?.nome || participant.guest_name || "";
+    if (cleanName === currentName) {
       setEditingParticipantId(null);
       return;
     }
@@ -855,6 +856,7 @@ export default function MatchDetailPage({
         participantId: participant.id,
         profileId: participant.user_id,
         newName: cleanName,
+        isGuest: !participant.user_id,
       });
 
       if (res.success) {
@@ -955,7 +957,9 @@ export default function MatchDetailPage({
       );
 
       // Notificar todos os participantes sobre o sorteio dos times
-      const participantUserIds = participants.map((p) => p.user_id);
+      const participantUserIds = participants
+        .map((p) => p.user_id)
+        .filter((id): id is string => !!id);
       if (participantUserIds.length > 0) {
         void createBatchNotifications(participantUserIds, {
           type: "match_update",
@@ -1220,7 +1224,7 @@ export default function MatchDetailPage({
   ) => {
     const displayName = p.user?.apelido
       ? `${p.user.nome} (${p.user.apelido})`
-      : p.user?.nome || "Jogador";
+      : p.user?.nome || p.guest_name || "Jogador";
 
     const isMatchVolei =
       match?.sport_type === "volei" ||
@@ -1294,7 +1298,7 @@ export default function MatchDetailPage({
                 className="w-full h-full object-cover"
               />
             ) : (
-              p.user?.nome?.charAt(0).toUpperCase() || "J"
+              (p.user?.nome || p.guest_name)?.charAt(0).toUpperCase() || "J"
             )}
           </button>
 
@@ -1333,14 +1337,25 @@ export default function MatchDetailPage({
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Link
-                  href={`/profile/${p.user_id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="font-black text-slate-900 dark:text-white text-xs sm:text-sm hover:text-brand-500 hover:underline transition-colors leading-tight inline-block cursor-pointer"
-                  title={`Ver perfil de ${displayName}`}
-                >
-                  {displayName}
-                </Link>
+                {p.user_id ? (
+                  <Link
+                    href={`/profile/${p.user_id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-black text-slate-900 dark:text-white text-xs sm:text-sm hover:text-brand-500 hover:underline transition-colors leading-tight inline-block cursor-pointer"
+                    title={`Ver perfil de ${displayName}`}
+                  >
+                    {displayName}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm leading-tight inline-block">
+                      {displayName}
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                      Avulso
+                    </span>
+                  </div>
+                )}
 
                 {p.paid ? (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 flex items-center gap-0.5 select-none">
@@ -1407,7 +1422,7 @@ export default function MatchDetailPage({
             )}
 
             <button
-              onClick={() => handleRemoveParticipant(p.id, p.user?.nome || "")}
+              onClick={() => handleRemoveParticipant(p.id, displayName)}
               className="p-1.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 transition-colors"
               title="Remover Jogador"
             >

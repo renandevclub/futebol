@@ -16,6 +16,20 @@ export interface AddMultiplePlayersResult {
 }
 
 /**
+ * Retorna o nome de exibição de um participante, seja registrado ou avulso (guest).
+ */
+export function getParticipantDisplayName(p: MatchParticipant): string {
+  return p.user?.nome || p.guest_name || 'Jogador Sem Nome';
+}
+
+/**
+ * Verifica se um participante é um jogador avulso (guest), sem conta no sistema.
+ */
+export function isGuestParticipant(p: MatchParticipant): boolean {
+  return !p.user_id && !!p.guest_name;
+}
+
+/**
  * Busca jogadores já existentes vinculados à liga para autocompletar e sugestões rápidas
  */
 export async function getLeagueExistingPlayers(leagueId: string): Promise<Profile[]> {
@@ -42,7 +56,9 @@ export async function getLeagueExistingPlayers(leagueId: string): Promise<Profil
 }
 
 /**
- * Adiciona um jogador por nome na lista da partida e vincula à liga correspondente
+ * Adiciona um jogador por nome na lista da partida.
+ * - Se encontrar um perfil existente (por whatsapp ou nome na liga), vincula normalmente.
+ * - Se não encontrar, adiciona como jogador avulso (guest) SEM criar perfil.
  */
 export async function addPlayerToMatch({
   matchId,
@@ -88,7 +104,7 @@ export async function addPlayerToMatch({
       };
     }
 
-    // 2. Fallback resiliente direto no Supabase Client caso a RPC ainda não esteja instalada no banco
+    // 2. Fallback resiliente — NUNCA cria perfil fantasma
     let targetUserId: string | null = null;
 
     // Buscar se já existe alguém com esse whatsapp
@@ -111,79 +127,91 @@ export async function addPlayerToMatch({
       if (foundMember) targetUserId = foundMember.user_id;
     }
 
-    if (!targetUserId) {
-      // Criar novo perfil
-      const { data: newProfile, error: profileErr } = await supabase
-        .from('profiles')
+    // Se encontrou um perfil existente, vincular normalmente
+    if (targetUserId) {
+      // Verificar se já está na partida
+      const { data: existingPart } = await supabase
+        .from('match_participants')
+        .select('*, user:user_id(*)')
+        .eq('match_id', matchId)
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+
+      if (existingPart) {
+        if (team !== undefined && team !== existingPart.team) {
+          await supabase
+            .from('match_participants')
+            .update({ team })
+            .eq('id', existingPart.id);
+        }
+        return {
+          success: true,
+          message: 'Jogador já estava na lista da partida!',
+          participant: existingPart as MatchParticipant,
+        };
+      }
+
+      // Inserir participante vinculado a perfil existente
+      const { data: insertedPart, error: partErr } = await supabase
+        .from('match_participants')
         .insert({
-          nome: cleanName,
-          whatsapp: cleanPhone,
-          role: 'player',
+          match_id: matchId,
+          user_id: targetUserId,
+          team: team ?? null,
+          paid: false,
         })
-        .select()
+        .select('*, user:user_id(*)')
         .single();
 
-      if (profileErr) {
-        return { success: false, error: 'Erro ao criar perfil do jogador: ' + profileErr.message };
+      if (partErr) {
+        return { success: false, error: 'Erro ao inscrever jogador na partida: ' + partErr.message };
       }
-      targetUserId = newProfile.id;
-    }
 
-    // Vincular à liga se houver
-    if (leagueId && targetUserId) {
-      try {
-        await supabase.from('organization_members').insert({
-          organization_id: leagueId,
-          user_id: targetUserId,
-          role: 'player',
-        });
-      } catch (e) {
-        // Ignora duplicata
-      }
-    }
-
-    // Verificar se já está na partida
-    const { data: existingPart } = await supabase
-      .from('match_participants')
-      .select('*, user:user_id(*)')
-      .eq('match_id', matchId)
-      .eq('user_id', targetUserId)
-      .maybeSingle();
-
-    if (existingPart) {
-      if (team !== undefined && team !== existingPart.team) {
-        await supabase
-          .from('match_participants')
-          .update({ team })
-          .eq('id', existingPart.id);
-      }
       return {
         success: true,
-        message: 'Jogador já estava na lista da partida!',
-        participant: existingPart as MatchParticipant,
+        message: 'Jogador adicionado à lista com sucesso!',
+        participant: insertedPart as MatchParticipant,
       };
     }
 
-    // Inserir em match_participants
-    const { data: insertedPart, error: partErr } = await supabase
+    // NÃO ENCONTROU perfil — adicionar como GUEST (avulso) sem criar profile
+    // Verificar se já existe guest com esse nome na partida
+    const { data: existingGuest } = await supabase
+      .from('match_participants')
+      .select('*')
+      .eq('match_id', matchId)
+      .is('user_id', null)
+      .ilike('guest_name', cleanName)
+      .maybeSingle();
+
+    if (existingGuest) {
+      return {
+        success: true,
+        message: 'Jogador avulso já estava na lista da partida!',
+        participant: existingGuest as MatchParticipant,
+      };
+    }
+
+    const { data: guestPart, error: guestErr } = await supabase
       .from('match_participants')
       .insert({
         match_id: matchId,
-        user_id: targetUserId,
+        user_id: null,
+        guest_name: cleanName,
         team: team ?? null,
         paid: false,
       })
-      .select('*, user:user_id(*)')
+      .select('*')
       .single();
 
-    if (partErr) {
-      return { success: false, error: 'Erro ao inscrever jogador na partida: ' + partErr.message };
+    if (guestErr) {
+      return { success: false, error: 'Erro ao adicionar jogador avulso: ' + guestErr.message };
     }
 
     return {
       success: true,
-      message: 'Jogador adicionado à lista com sucesso!',
-      participant: insertedPart as MatchParticipant,
+      message: 'Jogador avulso adicionado à partida! ⚽',
+      participant: guestPart as MatchParticipant,
     };
   } catch (err: any) {
     console.error('Exceção ao adicionar jogador:', err);
@@ -238,18 +266,20 @@ export async function addMultiplePlayersToMatch({
 }
 
 /**
- * Atualiza o nome de um jogador cadastrado
+ * Atualiza o nome de um jogador (registrado ou avulso)
  */
 export async function updatePlayerName({
   matchId,
   participantId,
   profileId,
   newName,
+  isGuest,
 }: {
   matchId: string;
   participantId: string;
-  profileId: string;
+  profileId?: string | null;
   newName: string;
+  isGuest?: boolean;
 }): Promise<{ success: boolean; error?: string }> {
   const cleanName = newName.trim();
   if (!cleanName) {
@@ -257,25 +287,40 @@ export async function updatePlayerName({
   }
 
   try {
-    // 1. Tentar via RPC
+    // 1. Tentar via RPC (suporta ambos os tipos)
     const { data: rpcData, error: rpcError } = await supabase.rpc('admin_update_match_player_name', {
       p_match_id: matchId,
-      p_user_id: profileId,
+      p_user_id: profileId || null,
       p_new_name: cleanName,
+      p_participant_id: participantId,
     });
 
     if (!rpcError && rpcData?.success) {
       return { success: true };
     }
 
-    // 2. Fallback direto no Supabase Client
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nome: cleanName })
-      .eq('id', profileId);
+    // 2. Fallback direto
+    if (isGuest || !profileId) {
+      // Jogador avulso: atualizar guest_name no match_participants
+      const { error } = await supabase
+        .from('match_participants')
+        .update({ guest_name: cleanName })
+        .eq('id', participantId)
+        .eq('match_id', matchId);
 
-    if (error) {
-      return { success: false, error: 'Erro ao atualizar nome: ' + error.message };
+      if (error) {
+        return { success: false, error: 'Erro ao atualizar nome do jogador avulso: ' + error.message };
+      }
+    } else {
+      // Jogador registrado: atualizar profiles
+      const { error } = await supabase
+        .from('profiles')
+        .update({ nome: cleanName })
+        .eq('id', profileId);
+
+      if (error) {
+        return { success: false, error: 'Erro ao atualizar nome: ' + error.message };
+      }
     }
 
     return { success: true };

@@ -76,7 +76,7 @@ export const WhatsAppNotifierModal: React.FC<WhatsAppNotifierModalProps> = ({
 
   // Gerar o texto final da mensagem para um participante específico
   const buildMessageText = (p: MatchParticipant) => {
-    const nome = p.user?.apelido || p.user?.nome || 'Jogador(a)';
+    const nome = p.user?.apelido || p.user?.nome || p.guest_name || 'Jogador(a)';
 
     if (templateType === 'cobranca') {
       let msg = `Olá, ${nome}! Tudo bem?\n\n`;
@@ -349,7 +349,7 @@ export const WhatsAppNotifierModal: React.FC<WhatsAppNotifierModalProps> = ({
               filteredParticipants.map((p) => {
                 const name = p.user?.apelido
                   ? `${p.user.nome} (${p.user.apelido})`
-                  : p.user?.nome || 'Jogador';
+                  : p.user?.nome || p.guest_name || 'Jogador';
                 const hasPhone = Boolean(p.user?.whatsapp);
 
                 return (
@@ -362,7 +362,7 @@ export const WhatsAppNotifierModal: React.FC<WhatsAppNotifierModalProps> = ({
                         {p.user?.avatar_url ? (
                           <img src={p.user.avatar_url} alt={name} className="w-full h-full object-cover" />
                         ) : (
-                          p.user?.nome?.charAt(0).toUpperCase() || 'J'
+                          (p.user?.nome || p.guest_name)?.charAt(0).toUpperCase() || 'J'
                         )}
                       </div>
                       <div className="truncate">

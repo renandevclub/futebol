@@ -4,7 +4,7 @@ import { getTeamInfo, TeamVisualInfo } from '@/lib/teamsHelper';
 
 export interface ChampionPlayerData {
   id: string;
-  user_id: string;
+  user_id: string | null;
   nome: string;
   apelido?: string | null;
   avatar_url?: string | null;
@@ -245,7 +245,7 @@ export async function getMatchChampionData(
         return {
           id: p.id,
           user_id: p.user_id,
-          nome: u?.nome || 'Jogador',
+          nome: u?.nome || p.guest_name || 'Jogador',
           apelido: u?.apelido || null,
           avatar_url: u?.avatar_url || null,
           posicao: resolvePlayerPosition(u, isVolei),

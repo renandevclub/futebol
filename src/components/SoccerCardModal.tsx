@@ -164,7 +164,7 @@ export const SoccerCardModal: React.FC<SoccerCardModalProps> = ({
               {players.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2.5">
                   {players.map((p) => {
-                    const nome = p.user?.nome || 'Jogador';
+                    const nome = p.user?.nome || p.guest_name || 'Jogador';
                     const apelido = p.user?.apelido;
                     const avatarUrl = p.user?.avatar_url;
 

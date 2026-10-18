@@ -9,6 +9,8 @@ import {
   updatePlayerName,
   removePlayerFromMatch,
   getLeagueExistingPlayers,
+  getParticipantDisplayName,
+  isGuestParticipant,
 } from '@/lib/matchPlayersHelper';
 import {
   X,
@@ -79,7 +81,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
   const filteredParticipants = useMemo(() => {
     if (!searchFilter.trim()) return participants;
     const q = searchFilter.toLowerCase().trim();
-    return participants.filter((p) => p.user?.nome?.toLowerCase().includes(q));
+    return participants.filter((p) => getParticipantDisplayName(p).toLowerCase().includes(q));
   }, [participants, searchFilter]);
 
   // Jogadores da liga que ainda não estão inscritos nesta partida (para sugestões rápidas)
@@ -203,7 +205,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
   // Iniciar edição de nome
   const startEditName = (p: MatchParticipant) => {
     setEditingParticipantId(p.id);
-    setEditingNameValue(p.user?.nome || '');
+    setEditingNameValue(getParticipantDisplayName(p));
   };
 
   // Salvar novo nome do jogador
@@ -214,7 +216,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
       return;
     }
 
-    if (newName === participant.user?.nome) {
+    if (newName === getParticipantDisplayName(participant)) {
       setEditingParticipantId(null);
       return;
     }
@@ -226,6 +228,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
         participantId: participant.id,
         profileId: participant.user_id,
         newName: newName,
+        isGuest: isGuestParticipant(participant),
       });
 
       if (res.success) {
@@ -245,7 +248,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
 
   // Remover jogador da partida
   const handleRemovePlayer = async (participant: MatchParticipant) => {
-    const name = participant.user?.nome || 'este jogador';
+    const name = getParticipantDisplayName(participant);
     if (!confirm(`Deseja remover "${name}" da lista desta partida?`)) {
       return;
     }
@@ -475,7 +478,8 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
               <div className="space-y-1.5">
                 {filteredParticipants.map((p, index) => {
                   const isEditingThis = editingParticipantId === p.id;
-                  const displayName = p.user?.nome || 'Jogador Sem Nome';
+                  const displayName = getParticipantDisplayName(p);
+                  const isGuest = isGuestParticipant(p);
 
                   return (
                     <div
@@ -525,6 +529,11 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
                               <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
                                 {displayName}
                               </span>
+                              {isGuest && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 font-black shrink-0">
+                                  Avulso
+                                </span>
+                              )}
                               {p.user?.apelido && (
                                 <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
                                   ({p.user.apelido})

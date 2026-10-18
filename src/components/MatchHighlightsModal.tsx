@@ -54,7 +54,7 @@ export const MatchHighlightsModal: React.FC<MatchHighlightsModalProps> = ({
   const validParticipants = participants.filter((p) => p.user);
 
   const filteredParticipants = validParticipants.filter((p) => {
-    const name = p.user?.nome?.toLowerCase() || '';
+    const name = (p.user?.nome || p.guest_name)?.toLowerCase() || '';
     const apelido = p.user?.apelido?.toLowerCase() || '';
     const query = searchTerm.toLowerCase();
     return name.includes(query) || apelido.includes(query);
@@ -274,7 +274,7 @@ export const MatchHighlightsModal: React.FC<MatchHighlightsModalProps> = ({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              p.user?.nome.charAt(0).toUpperCase()
+                              (p.user?.nome || p.guest_name)?.charAt(0).toUpperCase()
                             )}
                           </div>
                           {isMvpSelected && (
@@ -287,7 +287,7 @@ export const MatchHighlightsModal: React.FC<MatchHighlightsModalProps> = ({
 
                         <div className="min-w-0">
                           <h4 className="font-extrabold text-xs text-white truncate flex items-center gap-1.5">
-                            <span>{p.user?.nome}</span>
+                            <span>{p.user?.nome || p.guest_name || 'Jogador'}</span>
                             {p.user?.apelido && (
                               <span className="text-slate-400 font-semibold text-[10px]">
                                 ({p.user.apelido})

@@ -383,7 +383,8 @@ export interface Match {
 export interface MatchParticipant {
   id: string;
   match_id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name?: string | null;
   team?: number | null;
   paid?: boolean;
   paid_at?: string | null;

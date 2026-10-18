@@ -131,19 +131,19 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
   const expectedTotal = totalConfirmed * pricePerParticipant;
 
   const paidParticipants = participants.filter((p) => {
-    const tx = userTxMap[p.user_id];
+    const tx = p.user_id ? userTxMap[p.user_id] : undefined;
     return p.paid || tx?.status === 'confirmed';
   });
 
   const pendingParticipants = participants.filter((p) => {
-    const tx = userTxMap[p.user_id];
+    const tx = p.user_id ? userTxMap[p.user_id] : undefined;
     return !p.paid && tx?.status !== 'confirmed';
   });
 
   // 1. 💰 Total Arrecadado dos Jogadores
   let totalCollectedReal = 0;
   paidParticipants.forEach((p) => {
-    const tx = userTxMap[p.user_id];
+    const tx = p.user_id ? userTxMap[p.user_id] : undefined;
     if (tx?.valor_confirmado) {
       totalCollectedReal += Number(tx.valor_confirmado);
     } else {
@@ -153,7 +153,7 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
 
   let totalPending = 0;
   pendingParticipants.forEach((p) => {
-    const tx = userTxMap[p.user_id];
+    const tx = p.user_id ? userTxMap[p.user_id] : undefined;
     if (tx?.valor_informado) {
       totalPending += Number(tx.valor_informado);
     } else {
@@ -202,7 +202,7 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
   const handleTogglePayment = async (participant: MatchParticipant) => {
     if (!isAdmin) return;
 
-    const tx = userTxMap[participant.user_id];
+    const tx = participant.user_id ? userTxMap[participant.user_id] : undefined;
     if (tx && tx.status === 'pending') {
       // Se há transação pendente, abrir o modal de conferência
       setConfirmModalTx(tx);
@@ -225,17 +225,19 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
     if (error) {
       toast.error('Erro ao atualizar status de pagamento.');
     } else {
-      const pName = participant.user?.apelido || participant.user?.nome || 'Jogador';
+      const pName = participant.user?.apelido || participant.user?.nome || participant.guest_name || 'Jogador';
       if (newPaidStatus) {
         toast.success(`Pagamento de ${pName} confirmado! 💵`);
-        void createNotification({
-          userId: participant.user_id,
-          type: 'payment_confirmed',
-          title: 'Pagamento Confirmado! 💵',
-          message: `Seu pagamento para a partida "${match.titulo}" foi confirmado com sucesso. Bom jogo!`,
-          link: `/matches/${match.id}`,
-          metadata: { match_id: match.id, amount: pricePerParticipant },
-        });
+        if (participant.user_id) {
+          void createNotification({
+            userId: participant.user_id,
+            type: 'payment_confirmed',
+            title: 'Pagamento Confirmado! 💵',
+            message: `Seu pagamento para a partida "${match.titulo}" foi confirmado com sucesso. Bom jogo!`,
+            link: `/matches/${match.id}`,
+            metadata: { match_id: match.id, amount: pricePerParticipant },
+          });
+        }
       } else {
         toast.info(`Pagamento de ${pName} marcado como pendente.`);
       }
@@ -384,7 +386,7 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
           </thead>
           <tbody>
             ${participants.map((p, index) => {
-              const name = p.user?.apelido ? `${p.user.nome} (${p.user.apelido})` : p.user?.nome || 'Jogador';
+              const name = p.user?.apelido ? `${p.user.nome} (${p.user.apelido})` : p.user?.nome || p.guest_name || 'Jogador';
               return `
                 <tr>
                   <td>${index + 1}</td>
@@ -669,7 +671,7 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
               filteredParticipants.map((p, index) => {
                 const name = p.user?.apelido
                   ? `${p.user.nome} (${p.user.apelido})`
-                  : p.user?.nome || 'Jogador';
+                  : p.user?.nome || p.guest_name || 'Jogador';
 
                 return (
                   <div
@@ -680,34 +682,55 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
                       <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center text-[10px] shrink-0">
                         {index + 1}
                       </span>
-                      <Link
-                        href={`/profile/${p.user_id}`}
-                        onClick={onClose}
-                        className="group/player flex items-center gap-2.5 min-w-0 hover:opacity-90 transition-all cursor-pointer"
-                        title={`Ver perfil de ${name}`}
-                      >
-                        <div className="w-7 h-7 rounded-full bg-brand-500 text-white font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 group-hover/player:ring-2 group-hover/player:ring-emerald-500 group-hover/player:scale-105 transition-all">
-                          {p.user?.avatar_url ? (
-                            <img src={p.user.avatar_url} alt={name} className="w-full h-full object-cover" />
-                          ) : (
-                            p.user?.nome?.charAt(0).toUpperCase() || 'J'
-                          )}
+                      {p.user_id ? (
+                        <Link
+                          href={`/profile/${p.user_id}`}
+                          onClick={onClose}
+                          className="group/player flex items-center gap-2.5 min-w-0 hover:opacity-90 transition-all cursor-pointer"
+                          title={`Ver perfil de ${name}`}
+                        >
+                          <div className="w-7 h-7 rounded-full bg-brand-500 text-white font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 group-hover/player:ring-2 group-hover/player:ring-emerald-500 group-hover/player:scale-105 transition-all">
+                            {p.user?.avatar_url ? (
+                              <img src={p.user.avatar_url} alt={name} className="w-full h-full object-cover" />
+                            ) : (
+                              (p.user?.nome || p.guest_name)?.charAt(0).toUpperCase() || 'J'
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block truncate group-hover/player:text-emerald-500 dark:group-hover/player:text-emerald-400 group-hover/player:underline decoration-emerald-500/50 underline-offset-2 transition-colors">
+                              {name}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block">
+                              R$ {pricePerParticipant.toFixed(2)}
+                            </span>
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-slate-400 text-white font-bold text-xs flex items-center justify-center overflow-hidden shrink-0">
+                            {(p.user?.nome || p.guest_name)?.charAt(0).toUpperCase() || 'J'}
+                          </div>
+                          <div className="truncate">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
+                                {name}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                Avulso
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block">
+                              R$ {pricePerParticipant.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="truncate">
-                          <span className="font-bold text-slate-800 dark:text-slate-200 block truncate group-hover/player:text-emerald-500 dark:group-hover/player:text-emerald-400 group-hover/player:underline decoration-emerald-500/50 underline-offset-2 transition-colors">
-                            {name}
-                          </span>
-                          <span className="text-[10px] text-slate-400 block">
-                            R$ {pricePerParticipant.toFixed(2)}
-                          </span>
-                        </div>
-                      </Link>
+                      )}
                     </div>
 
                     {/* Status de Pagamento & Ação Admin */}
                     <div className="flex items-center gap-2 shrink-0">
                       {(() => {
-                        const tx = userTxMap[p.user_id];
+                        const tx = p.user_id ? userTxMap[p.user_id] : undefined;
                         const isWalletPaid = p.payment_method === 'wallet' || tx?.type === 'wallet_usage';
                         const isConfirmed = p.paid || tx?.status === 'confirmed';
                         const isPendingApproval = tx?.status === 'pending' || p.payment_status === 'waiting_approval';
@@ -752,11 +775,11 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
                       {/* Botão de Alteração pelo Admin */}
                       {isAdmin && (
                         <div className="flex items-center gap-1">
-                          {userTxMap[p.user_id] && (
+                          {p.user_id && userTxMap[p.user_id] && (
                             <button
                               type="button"
                               onClick={() => {
-                                setConfirmModalTx(userTxMap[p.user_id]);
+                                setConfirmModalTx(userTxMap[p.user_id!]);
                                 setIsConfirmModalOpen(true);
                               }}
                               className="px-2 py-1 rounded-xl text-[10px] font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"

@@ -151,7 +151,7 @@ export const SoccerQuickGoalModal: React.FC<SoccerQuickGoalModalProps> = ({
                 {players.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                     {players.map((p) => {
-                      const nome = p.user?.nome || 'Jogador';
+                      const nome = p.user?.nome || p.guest_name || 'Jogador';
                       const apelido = p.user?.apelido;
                       const posicao = p.user?.futebol_position || p.user?.posicao || 'Linha';
                       const avatarUrl = p.user?.avatar_url;
@@ -258,7 +258,7 @@ export const SoccerQuickGoalModal: React.FC<SoccerQuickGoalModalProps> = ({
                     {players
                       .filter((p) => p.user_id !== selectedScorerId)
                       .map((p) => {
-                        const nome = p.user?.nome || 'Jogador';
+                        const nome = p.user?.nome || p.guest_name || 'Jogador';
                         const apelido = p.user?.apelido;
                         const posicao = p.user?.futebol_position || p.user?.posicao || 'Linha';
                         const avatarUrl = p.user?.avatar_url;

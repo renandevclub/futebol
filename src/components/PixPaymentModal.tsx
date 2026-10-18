@@ -179,7 +179,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
   // Gerar o Payload do PIX
   const pixPayload = useMemo(() => {
     if (!chavePix.trim()) return '';
-    const playerName = participant?.user?.apelido || participant?.user?.nome || user?.nome || 'JOGADOR';
+    const playerName = participant?.user?.apelido || participant?.user?.nome || participant?.guest_name || user?.nome || 'JOGADOR';
     return generatePixPayload({
       key: chavePix.trim(),
       name: nomeRecebedor.trim() || 'FUTRESENHA',
@@ -250,7 +250,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
           valorInformado: parsedInformed,
           destinoExcedente: creditDestination,
           comprovanteUrl: publicUrl,
-          userName: participant.user?.apelido || participant.user?.nome || user.nome,
+          userName: participant.user?.apelido || participant.user?.nome || participant.guest_name || user.nome,
           matchTitle: match.titulo,
         });
 
@@ -294,7 +294,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
 
     const dateParts = match.data.split('-');
     const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-    const pName = participant?.user?.apelido || participant?.user?.nome || user?.nome || 'Jogador';
+    const pName = participant?.user?.apelido || participant?.user?.nome || participant?.guest_name || user?.nome || 'Jogador';
 
     let msg = `Olá! Segue meu comprovante de pagamento da partida:\n\n`;
     msg += `⚽ *Partida:* ${match.titulo}\n`;

@@ -1030,7 +1030,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 shadow-2xs"
                   >
                     <span className="text-emerald-500 font-black">{idx + 1}.</span>
-                    <span>{p.user?.nome || 'Jogador'}</span>
+                    <span>{p.user?.nome || p.guest_name || 'Jogador'}</span>
                   </span>
                 ))}
                 {participants.length > 8 && (

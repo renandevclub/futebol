@@ -99,7 +99,7 @@ export const VolleyQuickPointModal: React.FC<VolleyQuickPointModalProps> = ({
             {players.length > 0 ? (
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 {players.map((p) => {
-                  const nome = p.user?.nome || 'Jogador';
+                  const nome = p.user?.nome || p.guest_name || 'Jogador';
                   const apelido = p.user?.apelido;
                   const posicao = p.user?.volei_position || 'Atleta';
                   const avatarUrl = p.user?.avatar_url;

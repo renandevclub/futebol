@@ -172,7 +172,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export interface BalancedTeamResult {
-  teamBuckets: { id: string; user_id: string; team: number; rating: number; genero?: 'masculino' | 'feminino' | null }[][];
+  teamBuckets: { id: string; user_id: string | null; team: number; rating: number; genero?: 'masculino' | 'feminino' | null }[][];
   reserves: MatchParticipant[];
   teamStats: {
     teamNumber: number;
@@ -226,7 +226,7 @@ export function balanceParticipantsIntoTeams(params: BalanceParticipantsParams):
   // Inicializar baldes dos times
   type AllocatedMember = {
     id: string;
-    user_id: string;
+    user_id: string | null;
     team: number;
     rating: number;
     genero?: 'masculino' | 'feminino' | null;
@@ -239,7 +239,7 @@ export function balanceParticipantsIntoTeams(params: BalanceParticipantsParams):
 
   // Função auxiliar para calcular nota com leve jitter para desempate não-determinístico
   const withJitter = (p: MatchParticipant) => {
-    const userRating = getPlayerRating(p.user, leagueRatingsMap[p.user_id]);
+    const userRating = getPlayerRating(p.user, p.user_id ? leagueRatingsMap[p.user_id] : undefined);
     return {
       participant: p,
       rating: userRating,
@@ -503,7 +503,7 @@ export function balanceParticipantsIntoTeams(params: BalanceParticipantsParams):
     for (const t of order) {
       if (femAllocatedCount < femSorted.length && teamBuckets[t].length < playersPerTeam) {
         const p = femSorted[femAllocatedCount];
-        const rating = getPlayerRating(p.user, leagueRatingsMap[p.user_id]);
+        const rating = getPlayerRating(p.user, p.user_id ? leagueRatingsMap[p.user_id] : undefined);
         teamBuckets[t].push({
           id: p.id,
           user_id: p.user_id,

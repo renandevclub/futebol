@@ -153,12 +153,12 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                             ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                             : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                         }`}>
-                          {p.user?.nome?.substring(0, 2).toUpperCase() || 'JG'}
+                          {(p.user?.nome || p.guest_name)?.substring(0, 2).toUpperCase() || 'JG'}
                         </div>
                       )}
                       <div>
                         <span className="font-bold text-xs block text-slate-900 dark:text-white">
-                          {p.user?.nome || 'Jogador'}
+                          {p.user?.nome || p.guest_name || 'Jogador'}
                           {p.user?.apelido && (
                             <span className="text-slate-400 font-normal ml-1">
                               ({p.user.apelido})

@@ -63,7 +63,7 @@ export const ConfirmPaymentModal: React.FC<ConfirmPaymentModalProps> = ({
   const valorExcedente = Math.max(0, parsedConfirmed - valorPartida);
   const playerName = transaction.user?.apelido
     ? `${transaction.user.nome} (${transaction.user.apelido})`
-    : transaction.user?.nome || 'Jogador';
+    : transaction.user?.nome || transaction.participant?.guest_name || 'Jogador';
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -167,7 +167,7 @@ export function generateMatchPdf({ match, participants }: GenerateMatchPdfOption
 
     // Montar linhas da tabela do time
     const tableBody = teamPlayers.map((p, idx) => {
-      const nome = p.user?.nome || 'Jogador';
+      const nome = p.user?.nome || p.guest_name || 'Jogador';
       const apelido = p.user?.apelido ? `"${p.user.apelido}"` : '—';
       const posicao = isMatchVolei
         ? (p.user?.volei_position || '—')
@@ -266,7 +266,7 @@ export function generateMatchPdf({ match, participants }: GenerateMatchPdfOption
 
     const reserveBody = reserves.map((p, idx) => [
       (idx + 1).toString(),
-      p.user?.nome || 'Jogador',
+      p.user?.nome || p.guest_name || 'Jogador',
       p.user?.apelido ? `"${p.user.apelido}"` : '—',
       isMatchVolei
         ? (p.user?.volei_position || '—')
