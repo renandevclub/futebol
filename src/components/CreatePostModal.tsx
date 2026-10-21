@@ -200,6 +200,29 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           });
         }
         toast.success('Publicação criada com sucesso!');
+
+        // Notificar membros da liga sobre a nova publicação (se pertence a uma liga)
+        if (effectiveLeagueId && createdPost) {
+          void (async () => {
+            try {
+              const { data: members } = await supabase
+                .from('organization_members')
+                .select('user_id')
+                .eq('organization_id', effectiveLeagueId);
+
+              if (members && members.length > 0) {
+                const memberIds = members.map((m: any) => m.user_id);
+                const authorName = user.apelido || user.nome || 'Alguém';
+                const snippet = texto.trim() || '📷 Nova mídia publicada';
+                const leagueName = displayLeagueName || 'sua liga';
+                const { notifyNewPost } = await import('@/lib/notificationDispatcher');
+                await notifyNewPost(createdPost.id, authorName, snippet, effectiveLeagueId, leagueName, memberIds, user.id);
+              }
+            } catch (e) {
+              console.error('Erro ao notificar membros sobre novo post:', e);
+            }
+          })();
+        }
       }
 
       setUploadProgress(100);

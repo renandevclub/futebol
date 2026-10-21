@@ -201,6 +201,32 @@ export async function notifyPostComment(postAuthorId: string, commentAuthorName:
   });
 }
 
+// 12b. Nova Publicação na Liga -> Notificar todos os participantes da liga (exceto o autor)
+export async function notifyNewPost(
+  postId: string,
+  authorName: string,
+  snippet: string,
+  leagueId: string,
+  leagueName: string,
+  memberIds: string[],
+  authorId: string,
+) {
+  // Filtrar para não notificar o próprio autor
+  const recipientIds = memberIds.filter((id) => id !== authorId);
+  if (recipientIds.length === 0) return;
+
+  return createBatchNotifications(recipientIds, {
+    type: 'comment', // Reusa tipo 'comment' que já é da categoria 'feed'
+    category: 'feed',
+    priority: 'normal',
+    title: `📝 Nova publicação na ${leagueName}`,
+    message: `${authorName} publicou: "${snippet.substring(0, 80)}${snippet.length > 80 ? '...' : ''}"`,
+    link: `/?tab=feed`,
+    idempotencyKey: `new_post_${postId}`,
+    metadata: { post_id: postId, organization_id: leagueId },
+  });
+}
+
 // 13. Solicitação de Amizade -> Notificar o destinatário
 export async function notifyFriendRequest(senderProfile: Profile, receiverId: string) {
   const senderName = senderProfile.apelido || senderProfile.nome;

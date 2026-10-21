@@ -302,12 +302,17 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
         setNewPlayerInput('');
         setBatchPlayersText('');
 
-        // Notificar jogadores cadastrados
+        // Notificar membros da liga sobre a nova partida
         void (async () => {
           try {
-            const { data: allProfiles } = await supabase.from('profiles').select('id');
-            if (allProfiles && allProfiles.length > 0 && createdMatch) {
-              const ids = allProfiles.map((p) => p.id);
+            if (!createdMatch || !targetLeagueId) return;
+            const { data: members } = await supabase
+              .from('organization_members')
+              .select('user_id')
+              .eq('organization_id', targetLeagueId);
+
+            if (members && members.length > 0) {
+              const ids = members.map((m: any) => m.user_id);
               const { notifyMatchCreated } = await import('@/lib/notificationDispatcher');
               await notifyMatchCreated(createdMatch as any, ids);
             }

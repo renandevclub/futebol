@@ -114,6 +114,62 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
 }
 
 /**
+ * Retorna a quantidade de notificações não lidas filtradas por categoria.
+ * Útil para exibir badges específicos por seção (Partidas, Resenha, etc).
+ */
+export async function getUnreadNotificationCountByCategory(
+  userId: string,
+  category: NotificationCategory
+): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false)
+      .eq('category', category);
+
+    if (error) return 0;
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Retorna as contagens de notificações não lidas para múltiplas categorias de uma vez.
+ * Otimizado para uso no menu inferior, evitando múltiplas chamadas separadas.
+ */
+export async function getUnreadNotificationCountsByCategories(
+  userId: string,
+  categories: NotificationCategory[]
+): Promise<Record<NotificationCategory, number>> {
+  const result: Record<string, number> = {};
+  categories.forEach((c) => { result[c] = 0; });
+
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('category')
+      .eq('user_id', userId)
+      .eq('read', false)
+      .in('category', categories);
+
+    if (error || !data) return result as Record<NotificationCategory, number>;
+
+    data.forEach((row) => {
+      if (row.category && result[row.category] !== undefined) {
+        result[row.category]++;
+      }
+    });
+
+    return result as Record<NotificationCategory, number>;
+  } catch {
+    return result as Record<NotificationCategory, number>;
+  }
+}
+
+/**
  * Marca uma notificação como lida.
  */
 export async function markNotificationAsRead(notificationId: string): Promise<boolean> {
@@ -139,6 +195,28 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
       .update({ read: true, read_at: new Date().toISOString() })
       .eq('user_id', userId)
       .eq('read', false);
+
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Marca todas as notificações não lidas de uma categoria específica como lidas.
+ * Usado para limpar badges por seção (ex: ao clicar em Partidas, limpa notificações de 'matches').
+ */
+export async function markAllNotificationsAsReadByCategory(
+  userId: string,
+  category: NotificationCategory
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true, read_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('read', false)
+      .eq('category', category);
 
     return !error;
   } catch {

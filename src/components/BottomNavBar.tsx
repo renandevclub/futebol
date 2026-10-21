@@ -30,7 +30,8 @@ const LeagueSelectNavigationModal = dynamic(
   { ssr: false },
 );
 
-import { getUnreadNotificationCount } from "@/lib/notifications";
+import { getUnreadNotificationCount, getUnreadNotificationCountsByCategories } from "@/lib/notifications";
+import { markAllNotificationsAsReadByCategory } from "@/lib/notifications";
 import { getLeagueWallet } from "@/lib/financeHelper";
 import { subscribeToTables } from "@/lib/realtime";
 
@@ -51,6 +52,8 @@ export const BottomNavBar: React.FC = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+  const [unreadMatchesCount, setUnreadMatchesCount] = useState<number>(0);
+  const [unreadFeedCount, setUnreadFeedCount] = useState<number>(0);
   const [currentWalletBalance, setCurrentWalletBalance] = useState<number | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
 
@@ -80,14 +83,21 @@ export const BottomNavBar: React.FC = () => {
     }
   };
 
-  // Carregar notificações não lidas
+  // Carregar notificações não lidas (geral + por categoria)
   const loadUnreadCount = useCallback(async () => {
     if (!user?.id) {
       setUnreadNotificationsCount(0);
+      setUnreadMatchesCount(0);
+      setUnreadFeedCount(0);
       return;
     }
-    const count = await getUnreadNotificationCount(user.id);
-    setUnreadNotificationsCount(count);
+    const [totalCount, categoryCounts] = await Promise.all([
+      getUnreadNotificationCount(user.id),
+      getUnreadNotificationCountsByCategories(user.id, ['matches', 'feed']),
+    ]);
+    setUnreadNotificationsCount(totalCount);
+    setUnreadMatchesCount(categoryCounts.matches || 0);
+    setUnreadFeedCount(categoryCounts.feed || 0);
   }, [user?.id]);
 
   // Carregar saldo da carteira na liga atual
@@ -157,6 +167,12 @@ export const BottomNavBar: React.FC = () => {
       return;
     }
 
+    // Limpar badge de Partidas ao acessar a seção
+    if (unreadMatchesCount > 0) {
+      setUnreadMatchesCount(0);
+      void markAllNotificationsAsReadByCategory(user.id, 'matches');
+    }
+
     const leagues = userParticipatingLeagues || [];
 
     if (leagues.length === 1) {
@@ -179,6 +195,12 @@ export const BottomNavBar: React.FC = () => {
     if (!user) {
       setIsLoginModalOpen(true);
       return;
+    }
+
+    // Limpar badge de Resenha ao acessar a seção
+    if (unreadFeedCount > 0) {
+      setUnreadFeedCount(0);
+      void markAllNotificationsAsReadByCategory(user.id, 'feed');
     }
 
     const leagues = userParticipatingLeagues || [];
@@ -223,6 +245,20 @@ export const BottomNavBar: React.FC = () => {
     (pathname === "/" && activeTab === "matches") ||
     (pathname.startsWith("/matches") && !pathname.includes("/tv"));
 
+  // Ao estar ou entrar na aba ativa correspondente, limpa automaticamente as notificações não lidas da categoria
+  useEffect(() => {
+    if (isMatchesActive && unreadMatchesCount > 0 && user?.id) {
+      setUnreadMatchesCount(0);
+      void markAllNotificationsAsReadByCategory(user.id, "matches");
+    }
+  }, [isMatchesActive, unreadMatchesCount, user?.id]);
+
+  useEffect(() => {
+    if (isFeedActive && unreadFeedCount > 0 && user?.id) {
+      setUnreadFeedCount(0);
+      void markAllNotificationsAsReadByCategory(user.id, "feed");
+    }
+  }, [isFeedActive, unreadFeedCount, user?.id]);
 
   const isVolei = currentLeague?.sport_type === "volei";
   const activeColor = isVolei ? "text-amber-500" : "text-emerald-500";
@@ -267,6 +303,14 @@ export const BottomNavBar: React.FC = () => {
                     : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
                 }`}
               />
+
+              {/* Badge de notificações não lidas para Partidas */}
+              {!isMatchesActive && unreadMatchesCount > 0 && (
+                <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950 shadow-sm animate-pulse">
+                  {unreadMatchesCount > 9 ? "9+" : unreadMatchesCount}
+                </span>
+              )}
+
               {isMatchesActive && (
                 <motion.span
                   layoutId="activeTabDot"
@@ -310,6 +354,14 @@ export const BottomNavBar: React.FC = () => {
                     : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"
                 }`}
               />
+
+              {/* Badge de notificações não lidas para Resenha */}
+              {!isFeedActive && unreadFeedCount > 0 && (
+                <span className="absolute -top-1 -right-0.5 min-w-[16px] h-4 px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950 shadow-sm animate-pulse">
+                  {unreadFeedCount > 9 ? "9+" : unreadFeedCount}
+                </span>
+              )}
+
               {isFeedActive && (
                 <motion.span
                   layoutId="activeTabDot"
