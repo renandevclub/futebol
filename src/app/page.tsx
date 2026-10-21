@@ -9,16 +9,9 @@ import { LeagueIndividualRankings } from "@/components/LeagueIndividualRankings"
 import { TournamentListSection } from "@/components/tournaments/TournamentListSection";
 import { LeagueCard } from "@/components/LeagueCard";
 import { LeagueSelector } from "@/components/LeagueSelector";
-import { CreateLeagueModal } from "@/components/CreateLeagueModal";
-import { EditLeagueModal } from "@/components/EditLeagueModal";
-import { BlockedLeagueModal } from "@/components/BlockedLeagueModal";
-import { JoinLeaguePasswordModal } from "@/components/JoinLeaguePasswordModal";
-import { ImageLightboxModal, LightboxPreviewData } from "@/components/ImageLightboxModal";
-import { LoginModal } from "@/components/LoginModal";
-import { CreatePostModal } from "@/components/CreatePostModal";
-import { CreateMatchModal } from "@/components/CreateMatchModal";
-import { AdminPanelModal } from "@/components/AdminPanelModal";
-import { EditProfileModal } from "@/components/EditProfileModal";
+import { SegmentedControl } from "@/components/SegmentedControl";
+import type { LightboxPreviewData } from "@/components/ImageLightboxModal";
+import dynamic from "next/dynamic";
 import {
   Calendar,
   MessageSquare,
@@ -53,9 +46,50 @@ import { League, Profile } from "@/types/database";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+const LoginModal = dynamic(
+  () => import("@/components/LoginModal").then((module) => module.LoginModal),
+  { ssr: false },
+);
+const CreatePostModal = dynamic(
+  () => import("@/components/CreatePostModal").then((module) => module.CreatePostModal),
+  { ssr: false },
+);
+const CreateMatchModal = dynamic(
+  () => import("@/components/CreateMatchModal").then((module) => module.CreateMatchModal),
+  { ssr: false },
+);
+const AdminPanelModal = dynamic(
+  () => import("@/components/AdminPanelModal").then((module) => module.AdminPanelModal),
+  { ssr: false },
+);
+const EditProfileModal = dynamic(
+  () => import("@/components/EditProfileModal").then((module) => module.EditProfileModal),
+  { ssr: false },
+);
+const CreateLeagueModal = dynamic(
+  () => import("@/components/CreateLeagueModal").then((module) => module.CreateLeagueModal),
+  { ssr: false },
+);
+const EditLeagueModal = dynamic(
+  () => import("@/components/EditLeagueModal").then((module) => module.EditLeagueModal),
+  { ssr: false },
+);
+const BlockedLeagueModal = dynamic(
+  () => import("@/components/BlockedLeagueModal").then((module) => module.BlockedLeagueModal),
+  { ssr: false },
+);
+const JoinLeaguePasswordModal = dynamic(
+  () => import("@/components/JoinLeaguePasswordModal").then((module) => module.JoinLeaguePasswordModal),
+  { ssr: false },
+);
+const ImageLightboxModal = dynamic(
+  () => import("@/components/ImageLightboxModal").then((module) => module.ImageLightboxModal),
+  { ssr: false },
+);
+
 export default function Home() {
   const router = useRouter();
-  const { user, refreshUser, isSuperAdmin, isAdmin } = useAuth();
+  const { user, refreshUser, isSuperAdmin, isAdmin, isLoading: isAuthLoading } = useAuth();
   const {
     leagues,
     currentLeague,
@@ -184,8 +218,22 @@ export default function Home() {
     }
   }, []);
 
+  // A resenha é uma área autenticada. Links antigos com ?tab=feed voltam
+  // para partidas assim que a autenticação inicial terminar de carregar.
+  useEffect(() => {
+    if (!isAuthLoading && !user && leagueTab === "feed") {
+      setLeagueTab("matches");
+    }
+  }, [isAuthLoading, user, leagueTab]);
+
   // Modais de Controle
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginInitialMode, setLoginInitialMode] = useState<"login" | "register">("register");
+
+  const openRegisterModal = () => {
+    setLoginInitialMode("register");
+    setIsLoginOpen(true);
+  };
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isCreateMatchOpen, setIsCreateMatchOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -334,7 +382,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
       <Header
-        onOpenLogin={() => setIsLoginOpen(true)}
+        onOpenLogin={openRegisterModal}
         onOpenCreatePost={() => setIsCreatePostOpen(true)}
         onOpenCreateMatch={() => setIsCreateMatchOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
@@ -386,15 +434,15 @@ export default function Home() {
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     whileHover={{ scale: 1.02 }}
-                    onClick={() => setIsLoginOpen(true)}
+                    onClick={openRegisterModal}
                     className="w-full flex items-center justify-center gap-3 px-8 py-4.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base sm:text-lg shadow-xl shadow-emerald-500/30 transition-all cursor-pointer group"
                   >
                     <MessageCircle className="w-6 h-6 text-white" />
-                    <span>Entrar com WhatsApp</span>
+                    <span>Cadastre-se Grátis com WhatsApp</span>
                     <ChevronRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
                   </motion.button>
                   <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-2">
-                    Acesso imediato com seu número • Sem senhas complicadas
+                    Crie sua conta em 30 segundos • 100% Gratuito e sem senhas
                   </p>
                 </div>
 
@@ -523,10 +571,10 @@ export default function Home() {
                     01
                   </div>
                   <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Faça seu Login
+                    Cadastre-se Grátis
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Acesse com seu número de WhatsApp e nome sem senhas ou cadastros longos.
+                    Crie sua conta em 30 segundos usando seu WhatsApp, sem senhas complicadas.
                   </p>
                 </div>
 
@@ -571,12 +619,16 @@ export default function Home() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   whileHover={{ scale: 1.02 }}
-                  onClick={() => setIsLoginOpen(true)}
-                  className="px-8 py-3.5 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-black text-sm shadow-md inline-flex items-center gap-2 cursor-pointer"
+                  onClick={openRegisterModal}
+                  className="w-full sm:w-auto max-w-md mx-auto px-7 sm:px-9 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-500/25 inline-flex items-center justify-center gap-2.5 cursor-pointer transition-all"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Começar Agora com WhatsApp</span>
+                  <MessageCircle className="w-5 h-5 shrink-0" />
+                  <span>Criar Minha Conta Grátis</span>
+                  <ChevronRight className="w-4 h-4 shrink-0" />
                 </motion.button>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-2">
+                  Participe das peladas da sua turma ou crie sua própria liga esportiva
+                </p>
               </div>
             </div>
           </section>
@@ -1226,97 +1278,32 @@ export default function Home() {
           {/* Alternador de Abas do Ambiente da Liga (Mobile-First com Rolagem Lateral Fluida) */}
           <div className="w-full overflow-x-auto no-scrollbar scrollbar-none scroll-smooth pb-1 pt-0.5">
             <div className="flex items-center justify-start sm:justify-center min-w-full w-max px-3 sm:px-0">
-              <div className="p-1 sm:p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1 shrink-0">
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={(e) => {
-                    setLeagueTab("matches");
-                    e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                  }}
-                  className={`px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    leagueTab === "matches"
+              <SegmentedControl
+                id="league-sections"
+                ariaLabel="Seções da liga"
+                value={leagueTab}
+                onValueChange={setLeagueTab}
+                scrollActiveIntoView
+                className="p-1 sm:p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1 shrink-0"
+                buttonClassName={(_, isActive) =>
+                  `min-h-[44px] px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                    isActive
                       ? isCurrentLeagueVolei
                         ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
                         : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>{isCurrentLeagueVolei ? "🏐 Partidas" : "⚽ Partidas"}</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={(e) => {
-                    setLeagueTab("tournaments");
-                    e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                  }}
-                  className={`px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    leagueTab === "tournaments"
-                      ? isCurrentLeagueVolei
-                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                        : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>🏆 Campeonatos</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={(e) => {
-                    setLeagueTab("standings");
-                    e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                  }}
-                  className={`px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    leagueTab === "standings"
-                      ? isCurrentLeagueVolei
-                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                        : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>🥇 Rankings</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={(e) => {
-                    setLeagueTab("feed");
-                    e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                  }}
-                  className={`px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    leagueTab === "feed"
-                      ? isCurrentLeagueVolei
-                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                        : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>📱 Feed</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={(e) => {
-                    setLeagueTab("members");
-                    e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                  }}
-                  className={`px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                    leagueTab === "members"
-                      ? isCurrentLeagueVolei
-                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                        : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>👥 Jogadores</span>
-                </motion.button>
-              </div>
+                  }`
+                }
+                options={[
+                  { value: "matches", icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>{isCurrentLeagueVolei ? "🏐 Partidas" : "⚽ Partidas"}</span> },
+                  { value: "tournaments", icon: <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>🏆 Campeonatos</span> },
+                  { value: "standings", icon: <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>🥇 Rankings</span> },
+                  ...(user
+                    ? [{ value: "feed" as const, icon: <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>📱 Feed</span> }]
+                    : []),
+                  { value: "members", icon: <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>👥 Jogadores</span> },
+                ]}
+              />
             </div>
           </div>
 
@@ -1352,7 +1339,7 @@ export default function Home() {
             )}
 
             {/* ABA 3: FEED & RESENHA EXCLUSIVO DA LIGA */}
-            {leagueTab === "feed" && (
+            {user && leagueTab === "feed" && (
               <FeedSection
                 leagueId={currentLeague?.id}
                 leagueName={currentLeague?.name}
@@ -1509,30 +1496,39 @@ export default function Home() {
       </footer>
 
       {/* MODAIS GLOBAIS */}
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      
-      <CreatePostModal
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onPostCreated={() => {}}
-        leagueId={currentLeague?.id}
-        leagueName={currentLeague?.name}
-      />
+      {isLoginOpen && (
+        <LoginModal
+          isOpen
+          initialMode={loginInitialMode}
+          onClose={() => setIsLoginOpen(false)}
+        />
+      )}
 
-      <CreateMatchModal
-        isOpen={isCreateMatchOpen}
-        onClose={() => setIsCreateMatchOpen(false)}
-        onMatchCreated={() => {}}
-      />
+      {isCreatePostOpen && (
+        <CreatePostModal
+          isOpen
+          onClose={() => setIsCreatePostOpen(false)}
+          onPostCreated={() => {}}
+          leagueId={currentLeague?.id}
+          leagueName={currentLeague?.name}
+        />
+      )}
 
-      <AdminPanelModal
-        isOpen={isAdminPanelOpen}
-        onClose={() => setIsAdminPanelOpen(false)}
-      />
+      {isCreateMatchOpen && (
+        <CreateMatchModal
+          isOpen
+          onClose={() => setIsCreateMatchOpen(false)}
+          onMatchCreated={() => {}}
+        />
+      )}
 
-      {user && (
+      {isAdminPanelOpen && (
+        <AdminPanelModal isOpen onClose={() => setIsAdminPanelOpen(false)} />
+      )}
+
+      {user && isEditProfileOpen && (
         <EditProfileModal
-          isOpen={isEditProfileOpen}
+          isOpen
           onClose={() => setIsEditProfileOpen(false)}
           profile={user}
           onProfileUpdated={refreshUser}
@@ -1540,50 +1536,60 @@ export default function Home() {
       )}
 
       {/* MODAIS DE GESTÃO DE LIGAS */}
-      <CreateLeagueModal
-        isOpen={isCreateLeagueOpen}
-        onClose={() => setIsCreateLeagueOpen(false)}
-        onLeagueCreated={(newLeagueId) => {
-          selectLeague(newLeagueId);
-          setIsCreateLeagueOpen(false);
-        }}
-      />
+      {isCreateLeagueOpen && (
+        <CreateLeagueModal
+          isOpen
+          onClose={() => setIsCreateLeagueOpen(false)}
+          onLeagueCreated={(newLeagueId) => {
+            selectLeague(newLeagueId);
+            setIsCreateLeagueOpen(false);
+          }}
+        />
+      )}
 
-      <EditLeagueModal
-        isOpen={isEditLeagueOpen}
-        onClose={() => {
-          setIsEditLeagueOpen(false);
-          setLeagueToEdit(null);
-        }}
-        league={leagueToEdit}
-      />
+      {isEditLeagueOpen && leagueToEdit && (
+        <EditLeagueModal
+          isOpen
+          onClose={() => {
+            setIsEditLeagueOpen(false);
+            setLeagueToEdit(null);
+          }}
+          league={leagueToEdit}
+        />
+      )}
 
-      <BlockedLeagueModal
-        isOpen={!!blockedLeagueToView}
-        onClose={() => setBlockedLeagueToView(null)}
-        league={blockedLeagueToView}
-      />
+      {blockedLeagueToView && (
+        <BlockedLeagueModal
+          isOpen
+          onClose={() => setBlockedLeagueToView(null)}
+          league={blockedLeagueToView}
+        />
+      )}
 
-      <JoinLeaguePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => {
-          setIsPasswordModalOpen(false);
-          setLeagueToEnterWithPassword(null);
-        }}
-        league={leagueToEnterWithPassword}
-        onPreviewLogo={handlePreviewLeagueLogo}
-        onSuccess={(leagueId) => {
-          selectLeague(leagueId);
-          setIsPasswordModalOpen(false);
-          setLeagueToEnterWithPassword(null);
-        }}
-      />
+      {isPasswordModalOpen && leagueToEnterWithPassword && (
+        <JoinLeaguePasswordModal
+          isOpen
+          onClose={() => {
+            setIsPasswordModalOpen(false);
+            setLeagueToEnterWithPassword(null);
+          }}
+          league={leagueToEnterWithPassword}
+          onPreviewLogo={handlePreviewLeagueLogo}
+          onSuccess={(leagueId) => {
+            selectLeague(leagueId);
+            setIsPasswordModalOpen(false);
+            setLeagueToEnterWithPassword(null);
+          }}
+        />
+      )}
 
       {/* Modal Lightbox para visualização de Foto de Perfil de Ligas */}
-      <ImageLightboxModal
-        data={leagueLightboxData}
-        onClose={() => setLeagueLightboxData(null)}
-      />
+      {leagueLightboxData && (
+        <ImageLightboxModal
+          data={leagueLightboxData}
+          onClose={() => setLeagueLightboxData(null)}
+        />
+      )}
     </div>
   );
 }

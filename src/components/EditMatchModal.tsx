@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, PanInfo } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Match, LocationItem, MatchParticipant } from '@/types/database';
@@ -340,13 +340,39 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
     }
   };
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl p-4 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+      />
+      <motion.div
+        initial={{ y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-xl p-4 sm:p-6 shadow-2xl max-h-[90dvh] sm:max-h-[88vh] flex flex-col pb-safe"
+      >
+        {/* Alça visual de arraste no mobile */}
+        <div className="pt-0.5 pb-2 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          aria-label="Fechar edição de partida"
         >
           <X className="w-5 h-5" />
         </button>
@@ -1114,7 +1140,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
             }}
           />
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

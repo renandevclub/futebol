@@ -1,6 +1,6 @@
 // Service Worker Moderno para Web Push e PWA — F&V Sports
 
-const SW_VERSION = "v2.2.0";
+const SW_VERSION = "v2.2.1";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -10,11 +10,26 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Suporte a PWA standalone
+// Suporte a PWA com tratamento resiliente de falhas de rede e requisições abortadas
 self.addEventListener("fetch", (event) => {
-  if (event.request.method === "GET") {
-    event.respondWith(fetch(event.request));
-  }
+  if (event.request.method !== "GET") return;
+
+  // Ignorar esquemas que não sejam http/https (como extensões chrome-extension://)
+  if (!event.request.url.startsWith("http")) return;
+
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      // Se a requisição falhar (offline, cancelada/abortada ou oscilação de rede),
+      // tenta recuperar do cache local ou devolve uma resposta segura sem erro não capturado
+      return caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return new Response(null, {
+          status: 504,
+          statusText: "Offline or request aborted",
+        });
+      });
+    })
+  );
 });
 
 // Escuta eventos de Push nativos enviados pelo servidor VAPID

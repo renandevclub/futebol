@@ -285,8 +285,14 @@ export const ScratchCardModal: React.FC<ScratchCardModalProps> = ({
     const tile = updatedTiles[tileIndex];
 
     if (tile.type === 'try_again') {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([15, 30]);
+      }
       toast.info('Tente novamente! Escolha outro bloco da raspadinha.', { duration: 1500 });
     } else if (tile.type === 'team' && tile.teamNumber) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([30, 40, 60, 40, 100]);
+      }
       setIsWon(true);
       const tInfo = TEAM_COLORS[tile.teamNumber - 1] || { name: `Time ${tile.teamNumber}`, emoji: '🏐' };
       setWonTeam({ number: tile.teamNumber, name: tInfo.name, emoji: tInfo.emoji });
@@ -309,8 +315,11 @@ export const ScratchCardModal: React.FC<ScratchCardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-brand-500/30 rounded-3xl w-full max-w-md p-6 shadow-2xl relative overflow-hidden text-center text-white space-y-5">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/70 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-t sm:border border-brand-500/30 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl relative overflow-hidden text-center text-white space-y-4 sm:space-y-5 pb-safe max-h-[92dvh] overflow-y-auto">
+        {/* Alça visual de arraste para Mobile */}
+        <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto sm:hidden -mt-1 mb-1" />
+
         {/* Canvas Nativo de Confetes */}
         <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-20" />
 

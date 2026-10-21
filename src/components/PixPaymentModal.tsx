@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import {
   X,
   Copy,
@@ -323,19 +323,44 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
         <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 10 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 10 }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden p-5 sm:p-6 shadow-2xl relative space-y-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm"
+        />
+
+        <motion.div
+          initial={{ y: "100%", opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 28, stiffness: 320 }}
+          drag="y"
+          dragConstraints={{ top: 0 }}
+          dragElastic={0.15}
+          onDragEnd={handleDragEnd}
+          className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y p-5 sm:p-6 pb-safe shadow-2xl space-y-5"
         >
-          {/* Botão Fechar */}
+          {/* Alça visual de arraste no mobile */}
+          <div className="pt-0.5 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+            <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+          </div>
+
+          {/* Botão Fechar com touch target confortável */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Fechar modal PIX"
           >
             <X className="w-5 h-5" />
           </button>

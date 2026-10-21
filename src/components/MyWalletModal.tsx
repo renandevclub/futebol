@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import {
   X,
   Wallet,
@@ -306,14 +306,34 @@ export const MyWalletModal: React.FC<MyWalletModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+      />
       <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 15 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 15 }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative"
+        initial={{ y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-lg max-h-[90dvh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden pb-safe"
       >
+        {/* Alça visual de arraste no mobile */}
+        <div className="pt-0.5 pb-2 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
         {/* Header com Seletor de Liga */}
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -337,7 +357,8 @@ export const MyWalletModal: React.FC<MyWalletModalProps> = ({
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Fechar meu caixa"
           >
             <X className="w-5 h-5" />
           </button>

@@ -217,7 +217,7 @@ export const AdminAuditTabSection: React.FC = () => {
                         {actionInfo.label}
                       </span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${
+                        className={`text-[10px] font-bold px-2 py-px rounded-full border ${
                           log.success
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                             : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"

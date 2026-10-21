@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, PanInfo } from 'framer-motion';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -327,14 +327,39 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
     }
   };
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[1.75rem] w-full max-w-xl p-4 sm:p-6 shadow-2xl relative max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+      />
+      <motion.div
+        initial={{ y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-xl p-4 sm:p-6 shadow-2xl max-h-[90dvh] sm:max-h-[88vh] overflow-hidden flex flex-col pb-safe"
+      >
+        {/* Alça visual de arraste no mobile */}
+        <div className="pt-0.5 pb-2 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
         <motion.button
           whileTap={{ scale: 0.88 }}
           transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           aria-label="Fechar modal"
         >
           <X className="w-5 h-5" />
@@ -353,7 +378,7 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
               }`}>
                 {isVolei ? 'Partida de Vôlei' : 'Partida de Futebol'}
               </span>
-              <span className={`text-[9px] px-1.5 py-0.2 rounded font-black uppercase ${
+              <span className={`text-[9px] px-1.5 py-px rounded font-black uppercase ${
                 isVolei ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
               }`}>
                 Modalidade Herdada
@@ -1271,7 +1296,7 @@ export const CreateMatchModal: React.FC<CreateMatchModalProps> = ({
             </motion.button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

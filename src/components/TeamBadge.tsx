@@ -134,7 +134,7 @@ export const TeamBadge: React.FC<TeamBadgeProps> = ({
     return (
       <div
         onClick={onClick}
-        className={`relative inline-flex items-center justify-center shrink-0 aspect-square select-none overflow-hidden backdrop-blur-xs shadow-xs transition-transform duration-200 ${sizeConfig.container} ${roundedClass} ${borderClass} ${bgClass} ${interactiveClass} ${className}`}
+        className={`relative inline-flex items-center justify-center shrink-0 aspect-square select-none overflow-hidden backdrop-blur-sm shadow-xs transition-transform duration-200 ${sizeConfig.container} ${roundedClass} ${borderClass} ${bgClass} ${interactiveClass} ${className}`}
         title={teamInfo?.name ? `${teamInfo.name}${onClick ? ' (Clique para ampliar)' : ''}` : 'Emblema do Time'}
       >
         <img

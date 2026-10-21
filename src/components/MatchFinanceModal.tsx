@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import Link from 'next/link';
 import {
   X,
@@ -454,13 +455,45 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
     return true;
   });
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 shadow-2xl relative space-y-4 sm:space-y-5">
+    <AnimatePresence>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-lg max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pb-safe"
+      >
+        {/* Alça visual de arraste no mobile */}
+        <div className="pt-3 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
+        {/* Conteúdo com rolagem isolada */}
+        <div className="overflow-y-auto overscroll-contain flex-1 touch-pan-y p-4 sm:p-6 space-y-4 sm:space-y-5 relative">
         {/* Botão Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="absolute top-0 right-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -672,10 +705,11 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
                 const name = p.user?.apelido
                   ? `${p.user.nome} (${p.user.apelido})`
                   : p.user?.nome || p.guest_name || 'Jogador';
+                const participantKey = p.id?.trim() || p.user_id || p.guest_name?.trim() || 'participant';
 
                 return (
                   <div
-                    key={p.id}
+                    key={`${participantKey}-${index}`}
                     className="p-2.5 flex items-center justify-between gap-2.5 text-xs"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -715,7 +749,7 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
                               <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">
                                 {name}
                               </span>
-                              <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              <span className="px-1.5 py-px rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                 Avulso
                               </span>
                             </div>
@@ -950,8 +984,11 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
             {/* Lista de Gastos Avulsos */}
             {expenses.length > 0 ? (
               <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 max-h-36 overflow-y-auto">
-                {expenses.map((exp) => (
-                  <div key={exp.id} className="p-2 flex items-center justify-between text-xs">
+                {expenses.map((exp, index) => (
+                  <div
+                    key={`${exp.id?.trim() || exp.created_at || exp.descricao || 'expense'}-${index}`}
+                    className="p-2 flex items-center justify-between text-xs"
+                  >
                     <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
                       {exp.descricao}
                     </span>
@@ -981,6 +1018,8 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
           </div>
         </div>
       </div>
+    </motion.div>
+    </div>
 
       {/* MODAL DE DISPARO DE MENSAGENS WHATSAPP */}
       <WhatsAppNotifierModal
@@ -1012,6 +1051,6 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
           onUpdate();
         }}
       />
-    </div>
+    </AnimatePresence>
   );
 };

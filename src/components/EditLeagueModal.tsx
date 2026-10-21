@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { compressImage } from '@/lib/mediaCompressor';
 import { X, Trophy, FileText, QrCode, Trash2, CheckCircle2, AlertTriangle, Camera, ImagePlus, Upload, KeyRound, Lock, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
 interface EditLeagueModalProps {
   isOpen: boolean;
@@ -182,18 +182,44 @@ export const EditLeagueModal: React.FC<EditLeagueModalProps> = ({
     }
   };
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+        />
+        <motion.div
+          initial={{ y: "100%", opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 28, stiffness: 320 }}
+          drag="y"
+          dragConstraints={{ top: 0 }}
+          dragElastic={0.15}
+          onDragEnd={handleDragEnd}
+          className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-lg max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pb-safe"
         >
+          {/* Alça visual de arraste no mobile */}
+          <div className="pt-3 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+            <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+          </div>
+
+          {/* Conteúdo com rolagem isolada */}
+          <div className="overflow-y-auto overscroll-contain flex-1 touch-pan-y p-5 sm:p-6 relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="absolute top-0 right-0 z-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -561,6 +587,7 @@ export const EditLeagueModal: React.FC<EditLeagueModalProps> = ({
               </button>
             </div>
           </form>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>

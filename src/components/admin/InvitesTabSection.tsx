@@ -361,7 +361,7 @@ export const InvitesTabSection: React.FC<InvitesTabSectionProps> = ({
 
       {/* Modal Confirmar Revogação */}
       {inviteToRevoke && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4">
             <div className="w-10 h-10 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-5 h-5" />

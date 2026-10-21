@@ -20,20 +20,13 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { ReactionPicker, REACTION_MAP } from "@/components/ReactionPicker";
 import { CommentSection } from "@/components/CommentSection";
-import { ShareModal } from "@/components/ShareModal";
-import { GalleryModal, GalleryMediaItem } from "@/components/GalleryModal";
-import { EditProfileModal } from "@/components/EditProfileModal";
-import { CreatePostModal } from "@/components/CreatePostModal";
-import { LoginModal } from "@/components/LoginModal";
-import { CreateMatchModal } from "@/components/CreateMatchModal";
-import { AdminPanelModal } from "@/components/AdminPanelModal";
+import type { GalleryMediaItem } from "@/components/GalleryModal";
 import { PassportCard } from "@/components/PassportCard";
-import {
-  ImageLightboxModal,
-  LightboxPreviewData,
-} from "@/components/ImageLightboxModal";
+import type { LightboxPreviewData } from "@/components/ImageLightboxModal";
+import dynamic from "next/dynamic";
 
 import { useRouter } from "next/navigation";
 import {
@@ -79,7 +72,6 @@ import {
   ArrowUpRight,
   Gift,
 } from "lucide-react";
-import { MyWalletModal } from "@/components/MyWalletModal";
 import { LeaguePlayerWallet } from "@/types/finance";
 import { getUserWallets, formatCurrency } from "@/lib/financeHelper";
 import { toast } from "sonner";
@@ -87,6 +79,43 @@ import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { subscribeToTables } from "@/lib/realtime";
+
+const EditProfileModal = dynamic(
+  () => import("@/components/EditProfileModal").then((module) => module.EditProfileModal),
+  { ssr: false },
+);
+const CreatePostModal = dynamic(
+  () => import("@/components/CreatePostModal").then((module) => module.CreatePostModal),
+  { ssr: false },
+);
+const ShareModal = dynamic(
+  () => import("@/components/ShareModal").then((module) => module.ShareModal),
+  { ssr: false },
+);
+const GalleryModal = dynamic(
+  () => import("@/components/GalleryModal").then((module) => module.GalleryModal),
+  { ssr: false },
+);
+const LoginModal = dynamic(
+  () => import("@/components/LoginModal").then((module) => module.LoginModal),
+  { ssr: false },
+);
+const CreateMatchModal = dynamic(
+  () => import("@/components/CreateMatchModal").then((module) => module.CreateMatchModal),
+  { ssr: false },
+);
+const AdminPanelModal = dynamic(
+  () => import("@/components/AdminPanelModal").then((module) => module.AdminPanelModal),
+  { ssr: false },
+);
+const ImageLightboxModal = dynamic(
+  () => import("@/components/ImageLightboxModal").then((module) => module.ImageLightboxModal),
+  { ssr: false },
+);
+const MyWalletModal = dynamic(
+  () => import("@/components/MyWalletModal").then((module) => module.MyWalletModal),
+  { ssr: false },
+);
 
 export default function ParticipantProfilePage({
   params,
@@ -609,7 +638,7 @@ export default function ParticipantProfilePage({
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-6 w-full flex-1 space-y-6">
+      <main className="max-w-4xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-24 sm:pb-8 pb-safe w-full flex-1 space-y-6">
         {/* CABEÇALHO DO PERFIL */}
         <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xl relative">
           {/* Foto de Capa Grande */}
@@ -1177,109 +1206,38 @@ export default function ParticipantProfilePage({
         ) : (
           /* NAVEGAÇÃO EM ABAS */
           <div className="space-y-6">
-            <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar pb-1">
-              <div className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1 shrink-0">
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("feed")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "feed"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
+            <div className="flex items-center justify-start sm:justify-center overflow-x-auto scrollbar-none pb-1.5 pt-0.5 snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0">
+              <SegmentedControl
+                id="profile-sections"
+                ariaLabel="Seções do perfil"
+                value={activeTab}
+                scrollActiveIntoView
+                onValueChange={(tab) => {
+                  if (typeof window !== "undefined" && "vibrate" in navigator) {
+                    navigator.vibrate(10);
+                  }
+                  setActiveTab(tab);
+                }}
+                className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1.5 shrink-0 max-w-full overflow-x-auto scrollbar-none snap-x snap-mandatory"
+                buttonClassName={(option, isActive) =>
+                  `px-3.5 sm:px-4 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 min-h-[44px] touch-manipulation cursor-pointer snap-start ${
+                    isActive
+                      ? option.value === "finance"
+                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
+                        : "bg-brand-500 text-white shadow-md shadow-brand-500/25"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Mural</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("albums")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "albums"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Álbum de Fotos</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("history")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "history"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Histórico</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("friends")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "friends"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Amigos ({friendsList.length})</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("followers")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "followers"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Rss className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Seguidores ({followersList.length})</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("timeline")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "timeline"
-                      ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Timeline</span>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={() => setActiveTab("finance")}
-                  className={`px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                    activeTab === "finance"
-                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                  <span>
-                    Meu Caixa{" "}
-                    {userWallets.length > 0 ? `(${userWallets.length})` : ""}
-                  </span>
-                </motion.button>
-              </div>
+                  }`
+                }
+                options={[
+                  { value: "feed", icon: <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Mural</span> },
+                  { value: "albums", icon: <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Álbum de Fotos</span> },
+                  { value: "history", icon: <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Histórico</span> },
+                  { value: "friends", icon: <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Amigos ({friendsList.length})</span> },
+                  { value: "followers", icon: <Rss className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Seguidores ({followersList.length})</span> },
+                  { value: "timeline", icon: <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: <span>Timeline</span> },
+                  { value: "finance", icon: <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />, label: <span>Meu Caixa {userWallets.length > 0 ? `(${userWallets.length})` : ""}</span> },
+                ]}
+              />
             </div>
 
             {/* ABA 1: MURAL / FEED PESSOAL */}
@@ -1947,25 +1905,27 @@ export default function ParticipantProfilePage({
       </main>
 
       {/* MODAIS GLOBAIS DA PÁGINA */}
-      {profile && (
+      {profile && isEditProfileOpen && (
         <EditProfileModal
-          isOpen={isEditProfileOpen}
+          isOpen
           onClose={() => setIsEditProfileOpen(false)}
           profile={profile}
           onProfileUpdated={fetchProfileData}
         />
       )}
 
-      <CreatePostModal
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onPostCreated={fetchProfileData}
-        targetUserId={id}
-      />
+      {isCreatePostOpen && (
+        <CreatePostModal
+          isOpen
+          onClose={() => setIsCreatePostOpen(false)}
+          onPostCreated={fetchProfileData}
+          targetUserId={id}
+        />
+      )}
 
       {editingPost && (
         <CreatePostModal
-          isOpen={!!editingPost}
+          isOpen
           onClose={() => setEditingPost(null)}
           onPostCreated={() => {
             setEditingPost(null);
@@ -1984,34 +1944,43 @@ export default function ParticipantProfilePage({
         />
       )}
 
-      <GalleryModal
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        items={allMediaItems}
-        initialIndex={galleryInitialIndex}
-      />
+      {isGalleryOpen && (
+        <GalleryModal
+          isOpen
+          onClose={() => setIsGalleryOpen(false)}
+          items={allMediaItems}
+          initialIndex={galleryInitialIndex}
+        />
+      )}
 
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      <CreateMatchModal
-        isOpen={isCreateMatchOpen}
-        onClose={() => setIsCreateMatchOpen(false)}
-        onMatchCreated={fetchProfileData}
-      />
-      <AdminPanelModal
-        isOpen={isAdminPanelOpen}
-        onClose={() => setIsAdminPanelOpen(false)}
-      />
+      {isLoginOpen && (
+        <LoginModal isOpen onClose={() => setIsLoginOpen(false)} />
+      )}
+      {isCreateMatchOpen && (
+        <CreateMatchModal
+          isOpen
+          onClose={() => setIsCreateMatchOpen(false)}
+          onMatchCreated={fetchProfileData}
+        />
+      )}
+      {isAdminPanelOpen && (
+        <AdminPanelModal isOpen onClose={() => setIsAdminPanelOpen(false)} />
+      )}
 
       {/* Lightbox para Visualização Ampliada de Foto de Perfil */}
-      <ImageLightboxModal data={lightboxData} onClose={closeImagePreview} />
+      {lightboxData && (
+        <ImageLightboxModal data={lightboxData} onClose={closeImagePreview} />
+      )}
 
-      <MyWalletModal
-        isOpen={isMyWalletModalOpen}
-        onClose={() => {
-          setIsMyWalletModalOpen(false);
-          fetchProfileData();
-        }}
-      />
+      {isMyWalletModalOpen && (
+        <MyWalletModal
+          isOpen
+          onClose={() => {
+            setIsMyWalletModalOpen(false);
+            fetchProfileData();
+          }}
+        />
+      )}
     </div>
   );
 }

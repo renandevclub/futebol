@@ -208,7 +208,7 @@ export const ConfirmPaymentModal: React.FC<ConfirmPaymentModalProps> = ({
                   href={transaction.comprovante_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-extrabold text-xs backdrop-blur-xs"
+                  className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-extrabold text-xs backdrop-blur-sm"
                 >
                   <Eye className="w-4 h-4" />
                   <span>Ver em Tamanho Real</span>

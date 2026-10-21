@@ -307,21 +307,21 @@ export default function NotificationsPage() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-emerald-400 transition-all active:scale-95"
+                className="flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-emerald-400 transition-all active:scale-95 min-h-[44px] touch-manipulation"
               >
-                <CheckCheck className="w-4 h-4 text-emerald-400" />
-                <span>Marcar todas como lidas</span>
+                <CheckCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="hidden sm:inline">Marcar todas como lidas</span>
               </button>
             )}
 
             {user && (
               <button
                 onClick={() => setIsPreferencesOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all active:scale-95"
+                className="flex items-center gap-2 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all active:scale-95 min-h-[44px] touch-manipulation"
                 title="Configurar preferências de notificação"
               >
-                <Settings className="w-4 h-4 text-slate-400" />
-                <span>Preferências</span>
+                <Settings className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="hidden sm:inline">Preferências</span>
               </button>
             )}
           </div>
@@ -416,10 +416,10 @@ export default function NotificationsPage() {
           </div>
 
           {/* Categorias */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar text-xs font-bold text-slate-400">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold text-slate-400 snap-x snap-mandatory">
             <button
               onClick={() => setCategoryFilter("all")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "all"
                   ? "bg-slate-800 text-white border border-slate-700"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -429,7 +429,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => setCategoryFilter("matches")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "matches"
                   ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -439,7 +439,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => setCategoryFilter("payments")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "payments"
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -449,7 +449,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => setCategoryFilter("teams")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "teams"
                   ? "bg-purple-500/20 text-purple-400 border border-purple-500/40"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -459,7 +459,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => setCategoryFilter("feed")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "feed"
                   ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -469,7 +469,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => setCategoryFilter("system")}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all min-h-[40px] touch-manipulation shrink-0 snap-start ${
                 categoryFilter === "system"
                   ? "bg-slate-700 text-white border border-slate-600"
                   : "hover:bg-slate-800/60 hover:text-slate-200"
@@ -566,7 +566,7 @@ export default function NotificationsPage() {
                         )}
                         <button
                           onClick={(e) => handleDelete(e, notif.id)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800/80 transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-slate-800/80 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation active:scale-90"
                           title="Excluir notificação"
                         >
                           <Trash2 className="w-4 h-4" />

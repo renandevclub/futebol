@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion, PanInfo } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Profile, Match, Post, Badge, League, OrganizationMember } from '@/types/database';
@@ -401,11 +402,40 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
     });
   }, [matches, matchLeagueFilter]);
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   if (!isOpen || !isAdmin) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl relative max-h-[92vh] sm:max-h-[88vh] flex flex-col space-y-3 sm:space-y-4">
+    <>
+      <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm"
+        />
+        <motion.div
+          initial={{ y: "100%", opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 28, stiffness: 320 }}
+          drag="y"
+          dragConstraints={{ top: 0 }}
+          dragElastic={0.15}
+          onDragEnd={handleDragEnd}
+          className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col space-y-3 sm:space-y-4 pb-safe"
+        >
+          {/* Alça visual de arraste para Mobile */}
+          <div className="pt-0.5 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+          </div>
+
         <button
           onClick={onClose}
           className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
@@ -962,7 +992,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
             )
           )}
         </div>
-      </div>
+      </motion.div>
+    </div>
 
       {/* Modal de Avaliação de Qualidade */}
       <PlayerRatingModal
@@ -1008,6 +1039,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({ isOpen, onClos
         }}
         league={leagueToEdit}
       />
-    </div>
+    </>
   );
 };

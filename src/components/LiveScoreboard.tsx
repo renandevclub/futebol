@@ -617,7 +617,7 @@ export const LiveScoreboard: React.FC<LiveScoreboardProps> = ({
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 bg-brand-500/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Barra Superior do Placar */}
-          <div className="relative z-10 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between gap-2 bg-slate-950/60 backdrop-blur-xs">
+          <div className="relative z-10 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between gap-2 bg-slate-950/60 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30 text-[11px] font-black tracking-wider">
                 JOGO #{activeGame.game_number}

@@ -2,18 +2,33 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
+import { SegmentedControl } from '@/components/SegmentedControl';
 import { StandingsTable } from '@/components/StandingsTable';
 import { LeagueIndividualRankings } from '@/components/LeagueIndividualRankings';
-import { LoginModal } from '@/components/LoginModal';
-import { CreatePostModal } from '@/components/CreatePostModal';
-import { CreateMatchModal } from '@/components/CreateMatchModal';
-import { AdminPanelModal } from '@/components/AdminPanelModal';
+import dynamic from 'next/dynamic';
 import { Match, League } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { useLeague } from '@/context/LeagueContext';
 import { Trophy, Filter, ArrowLeft, Users, Shield, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const LoginModal = dynamic(
+  () => import('@/components/LoginModal').then((module) => module.LoginModal),
+  { ssr: false },
+);
+const CreatePostModal = dynamic(
+  () => import('@/components/CreatePostModal').then((module) => module.CreatePostModal),
+  { ssr: false },
+);
+const CreateMatchModal = dynamic(
+  () => import('@/components/CreateMatchModal').then((module) => module.CreateMatchModal),
+  { ssr: false },
+);
+const AdminPanelModal = dynamic(
+  () => import('@/components/AdminPanelModal').then((module) => module.AdminPanelModal),
+  { ssr: false },
+);
 
 export default function StandingsPage() {
   const { leagues, currentLeague, selectLeague } = useLeague();
@@ -154,35 +169,26 @@ export default function StandingsPage() {
           </div>
 
           {/* Alternador Principal de Visualização: Rankings Individuais vs Tabela dos Times */}
-          <div className="relative z-10 pt-2 flex flex-wrap items-center gap-2 border-t border-slate-800/80">
-            <button
-              onClick={() => setViewMode('individual')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-                viewMode === 'individual'
+          <SegmentedControl
+            id="standings-view"
+            ariaLabel="Visualização da classificação"
+            value={viewMode}
+            onValueChange={setViewMode}
+            className="relative z-10 pt-2 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 border-t border-slate-800/80"
+            buttonClassName={(_, isActive) =>
+              `w-full sm:w-auto min-h-[44px] px-3.5 sm:px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                isActive
                   ? isVolei
                     ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
                     : 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/25'
                   : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Rankings Individuais dos Jogadores</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('teams')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-                viewMode === 'teams'
-                  ? isVolei
-                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                    : 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/25'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>Classificação Geral dos Times</span>
-            </button>
-          </div>
+              }`
+            }
+            options={[
+              { value: 'individual', icon: <Sparkles className="w-3.5 h-3.5 shrink-0" />, label: <span className="truncate">Rankings Individuais</span> },
+              { value: 'teams', icon: <Trophy className="w-3.5 h-3.5 shrink-0" />, label: <span className="truncate">Tabela dos Times</span> },
+            ]}
+          />
         </div>
 
         {/* 1. VISUALIZAÇÃO: RANKINGS INDIVIDUAIS POR LIGA */}
@@ -240,21 +246,26 @@ export default function StandingsPage() {
       </footer>
 
       {/* Modais Globais */}
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      <CreatePostModal
-        isOpen={isCreatePostOpen}
-        onClose={() => setIsCreatePostOpen(false)}
-        onPostCreated={() => {}}
-      />
-      <CreateMatchModal
-        isOpen={isCreateMatchOpen}
-        onClose={() => setIsCreateMatchOpen(false)}
-        onMatchCreated={() => {}}
-      />
-      <AdminPanelModal
-        isOpen={isAdminPanelOpen}
-        onClose={() => setIsAdminPanelOpen(false)}
-      />
+      {isLoginOpen && (
+        <LoginModal isOpen onClose={() => setIsLoginOpen(false)} />
+      )}
+      {isCreatePostOpen && (
+        <CreatePostModal
+          isOpen
+          onClose={() => setIsCreatePostOpen(false)}
+          onPostCreated={() => {}}
+        />
+      )}
+      {isCreateMatchOpen && (
+        <CreateMatchModal
+          isOpen
+          onClose={() => setIsCreateMatchOpen(false)}
+          onMatchCreated={() => {}}
+        />
+      )}
+      {isAdminPanelOpen && (
+        <AdminPanelModal isOpen onClose={() => setIsAdminPanelOpen(false)} />
+      )}
     </div>
   );
 }

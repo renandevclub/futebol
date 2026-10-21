@@ -732,6 +732,10 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
 
   // 5. Desfazer Último Evento (Gol ou Cartão - Item 10 do Requisito)
   const handleUndoLastEvent = async () => {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      try { navigator.vibrate([40, 20, 40]); } catch {}
+    }
+
     if (!isAuthorized || !activeGame || goals.length === 0) {
       toast.info('Nenhum evento registrado para desfazer.');
       return;
@@ -868,6 +872,9 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
   const handleStartTimer = async () => {
     if (!isAuthorized || !activeGame) return;
     try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(25); } catch {}
+      }
       const now = new Date().toISOString();
       const { error } = await supabase
         .from('match_games')
@@ -887,6 +894,9 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
   const handlePauseTimer = async () => {
     if (!isAuthorized || !activeGame) return;
     try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate([20, 30, 20]); } catch {}
+      }
       let accumulated = activeGame.duration_seconds;
       if (activeGame.timer_started_at) {
         accumulated += Math.floor(
@@ -1219,7 +1229,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
       {/* ═══════════════════════════════════════════════════════════════════
           CONTEÚDO PRINCIPAL (MESA DE ARBITRAGEM)
       ═══════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 max-w-4xl mx-auto w-full p-3 sm:p-5 space-y-4 relative z-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full p-3 sm:p-5 space-y-4 relative z-10 pb-28 sm:pb-12 pb-safe">
 
         {/* ═══════════════════════════════════════════════════════════════════
             PAINEL 1: JOGO EM ANDAMENTO (PLACAR ATIVO AO VIVO)
@@ -1315,6 +1325,9 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
                       whileTap={{ scale: 0.90 }}
                       whileHover={{ scale: 1.03 }}
                       onClick={() => {
+                        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                          try { navigator.vibrate(35); } catch {}
+                        }
                         setGoalTeamNumber(activeGame.team_a);
                         setEditingPointGoal(null);
                         if (isVolei) {
@@ -1410,6 +1423,9 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
                       whileTap={{ scale: 0.90 }}
                       whileHover={{ scale: 1.03 }}
                       onClick={() => {
+                        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                          try { navigator.vibrate(35); } catch {}
+                        }
                         setGoalTeamNumber(activeGame.team_b);
                         setEditingPointGoal(null);
                         if (isVolei) {
@@ -1500,15 +1516,16 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
                     )}
 
                     {/* Botão Desfazer Último Evento */}
+                    {/* Botão Desfazer Último Evento */}
                     <button
                       type="button"
                       onClick={handleUndoLastEvent}
                       disabled={goals.length === 0}
-                      className="px-3.5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-700 cursor-pointer disabled:opacity-40"
+                      className="px-3 py-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all border border-amber-500/30 cursor-pointer disabled:opacity-40 shrink-0"
                       title="Desfazer o último lance ou cartão"
                     >
                       <Undo2 className="w-4 h-4 text-amber-400" />
-                      <span className="hidden sm:inline">Desfazer</span>
+                      <span>Desfazer</span>
                     </button>
 
                     {/* Botão Ajustar Placar */}
@@ -2117,7 +2134,7 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
             <button
               type="button"
               onClick={() => setIsHistoryAccordionOpen((prev) => !prev)}
-              className="w-full p-4 sm:p-5 flex items-center justify-between bg-slate-900 hover:bg-slate-850 transition-colors text-left cursor-pointer"
+              className="w-full p-4 sm:p-5 flex items-center justify-between bg-slate-900 hover:bg-slate-800 transition-colors text-left cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-brand-500">
@@ -2324,6 +2341,104 @@ export default function MatchControlPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
       </main>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          STICKY BOTTOM THUMB BAR PARA CONTROLE MOBILE RÁPIDO
+      ═══════════════════════════════════════════════════════════════════ */}
+      {activeGame && activeGame.status !== 'finished' && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-slate-950/95 backdrop-blur-md border-t border-slate-800/90 px-3 py-2.5 pb-safe shadow-2xl">
+          <div className="flex items-center justify-between gap-1.5 max-w-lg mx-auto">
+            {/* Botão Gol / Ponto Time A */}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                  try { navigator.vibrate(35); } catch {}
+                }
+                setGoalTeamNumber(activeGame.team_a);
+                setEditingPointGoal(null);
+                if (isVolei) {
+                  setIsVolleyModalOpen(true);
+                } else {
+                  setIsSoccerGoalModalOpen(true);
+                }
+              }}
+              className="flex-1 py-2.5 px-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1 shadow-lg shadow-emerald-600/30 border border-emerald-400/40 truncate min-w-0"
+            >
+              <span className="text-sm shrink-0">{teamAInfo?.emoji || '⚽'}</span>
+              <span className="truncate">{isVolei ? '+ Ponto' : '+ Gol'}</span>
+            </motion.button>
+
+            {/* Cronômetro / Play / Pause (Futebol) ou Placar Atual (Vôlei) */}
+            {!isVolei ? (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.94 }}
+                onClick={() => {
+                  if (activeGame.timer_is_running) {
+                    void handlePauseTimer();
+                  } else {
+                    void handleStartTimer();
+                  }
+                }}
+                className={`px-3 py-2.5 rounded-2xl font-mono font-black text-xs flex items-center justify-center gap-1.5 border transition-all shrink-0 ${
+                  activeGame.timer_is_running
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                }`}
+              >
+                {activeGame.timer_is_running ? (
+                  <Pause className="w-3.5 h-3.5 fill-amber-300" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-slate-300" />
+                )}
+                <span>{formatTime(currentSeconds)}</span>
+              </motion.button>
+            ) : (
+              <div className="px-3 py-2 rounded-2xl bg-slate-900 border border-slate-800 font-mono font-black text-xs text-white shrink-0">
+                <span>{activeGame.score_a}</span>
+                <span className="text-slate-500 mx-1">×</span>
+                <span>{activeGame.score_b}</span>
+              </div>
+            )}
+
+            {/* Botão Gol / Ponto Time B */}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                  try { navigator.vibrate(35); } catch {}
+                }
+                setGoalTeamNumber(activeGame.team_b);
+                setEditingPointGoal(null);
+                if (isVolei) {
+                  setIsVolleyModalOpen(true);
+                } else {
+                  setIsSoccerGoalModalOpen(true);
+                }
+              }}
+              className="flex-1 py-2.5 px-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black text-xs flex items-center justify-center gap-1 shadow-lg shadow-blue-600/30 border border-blue-400/40 truncate min-w-0"
+            >
+              <span className="text-sm shrink-0">{teamBInfo?.emoji || '⚽'}</span>
+              <span className="truncate">{isVolei ? '+ Ponto' : '+ Gol'}</span>
+            </motion.button>
+
+            {/* Desfazer Último Evento */}
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.90 }}
+              onClick={handleUndoLastEvent}
+              disabled={goals.length === 0}
+              className="p-2.5 rounded-2xl bg-slate-900 border border-amber-500/30 text-amber-400 disabled:opacity-30 disabled:border-slate-800 disabled:text-slate-600 shrink-0"
+              title="Desfazer último lance"
+            >
+              <Undo2 className="w-4 h-4" />
+            </motion.button>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           MODAIS AUXILIARES

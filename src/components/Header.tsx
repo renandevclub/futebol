@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useId, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   Sun,
@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   User,
+  UserPlus,
   Home,
   MessageSquare,
   ChevronRight,
@@ -54,6 +55,8 @@ export const Header: React.FC<HeaderProps> = ({
   const { currentLeague, clearSelectedLeague, myLeagues } = useLeague();
   const hasAdminAccess = isSuperAdmin || myLeagues.length > 0;
   const pathname = usePathname();
+  const mobileMenuId = useId();
+  const mobileMenuTitleId = `${mobileMenuId}-title`;
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -154,28 +157,40 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-[72px] flex items-center justify-between gap-3">
-          {/* Logo & Marca */}
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 sm:gap-3 group shrink-0"
-          >
-            <img
-              src="/logo.png"
-              alt="F&V Sports"
-              className="w-11 h-11 sm:w-13 sm:h-13 object-contain group-hover:scale-105 transition-transform duration-300 shrink-0 drop-shadow-sm"
-            />
-            <div className="min-w-0">
-              <h1 className="font-black text-lg sm:text-2xl leading-none tracking-tight text-slate-900 dark:text-white transition-colors truncate flex items-center gap-1.5">
-                <span className="text-slate-900 dark:text-white font-black tracking-tight">F&V</span>
-                <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 bg-clip-text text-transparent font-black tracking-wide">
-                  Sports
+          {/* Logo & Marca + Seletor de Liga Compacto no Mobile */}
+          <div className="flex items-center gap-2 min-w-0">
+            <Link
+              href="/"
+              className="flex items-center gap-2 sm:gap-3 group shrink-0"
+            >
+              <img
+                src="/logo.png"
+                alt="F&V Sports"
+                className="w-10 h-10 sm:w-13 sm:h-13 object-contain group-hover:scale-105 transition-transform duration-300 shrink-0 drop-shadow-sm"
+              />
+              <div className="min-w-0">
+                <h1 className="font-black text-base sm:text-2xl leading-none tracking-tight text-slate-900 dark:text-white transition-colors truncate flex items-center gap-1">
+                  <span className="text-slate-900 dark:text-white font-black tracking-tight">F&V</span>
+                  <span className="hidden min-[360px]:inline bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 bg-clip-text text-transparent font-black tracking-wide">
+                    Sports
+                  </span>
+                </h1>
+                <span className="hidden sm:block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-0.5">
+                  Futebol & Vôlei
                 </span>
-              </h1>
-              <span className="hidden sm:block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-0.5">
-                Futebol & Vôlei
-              </span>
-            </div>
-          </Link>
+              </div>
+            </Link>
+
+            {/* Seletor Compacto da Liga Ativa no Mobile */}
+            {currentLeague && (
+              <div className="hidden min-[520px]:flex sm:hidden items-center min-w-0 ml-0.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 truncate max-w-[100px] shadow-xs">
+                  <span>{currentLeague.sport_type === "volei" ? "🏐" : "⚽"}</span>
+                  <span className="truncate">{currentLeague.name}</span>
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Navegação Desktop */}
           <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 text-xs font-extrabold">
@@ -378,7 +393,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 leading-tight group-hover:text-brand-500 transition-colors max-w-[100px] truncate">
                         {user.apelido || user.nome}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5">
+                      <span className="text-[10px] px-1.5 py-px rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5">
                         <span>🩴</span>
                         <span>Boleiro</span>
                       </span>
@@ -406,26 +421,26 @@ export const Header: React.FC<HeaderProps> = ({
                 whileTap={{ scale: 0.94 }}
                 whileHover={{ scale: 1.04 }}
                 onClick={onOpenLogin}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition-all shadow-md shadow-brand-500/20"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white transition-all shadow-md shadow-emerald-500/25 cursor-pointer"
               >
-                <LogIn className="w-4 h-4" />
-                <span>Entrar / Cadastrar</span>
+                <UserPlus className="w-4 h-4" />
+                <span>Cadastre-se Grátis</span>
               </motion.button>
             )}
           </div>
 
-          {/* Bar de Ações Reduzida & Botão Hambúrguer Mobile */}
-          <div className="flex items-center gap-1.5 sm:hidden">
+          {/* Barra de Ações Reduzida & Botão Hambúrguer Mobile */}
+          <div className="flex items-center gap-1 sm:hidden">
             <motion.button
               whileTap={{ scale: 0.9, rotate: 15 }}
               onClick={toggleTheme}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="w-10 h-10 touch-target rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
               aria-label="Alternar tema"
             >
               {isDarkMode ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-4.5 h-4.5 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-slate-700" />
+                <Moon className="w-4.5 h-4.5 text-slate-700" />
               )}
             </motion.button>
 
@@ -434,12 +449,12 @@ export const Header: React.FC<HeaderProps> = ({
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsNotificationModalOpen(true)}
-                className="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="relative w-10 h-10 touch-target rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
                 aria-label="Abrir central de notificações"
               >
                 <Bell className="w-4.5 h-4.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -449,7 +464,7 @@ export const Header: React.FC<HeaderProps> = ({
             {user ? (
               <Link
                 href={`/profile/${user.id}`}
-                className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-950 border border-brand-300 dark:border-brand-700 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-xs overflow-hidden active:scale-90 transition-transform"
+                className="w-9 h-9 touch-target rounded-full bg-brand-100 dark:bg-brand-950 border border-brand-300 dark:border-brand-700 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-xs overflow-hidden active:scale-90 transition-transform shrink-0"
               >
                 {user.avatar_url ? (
                   <img
@@ -463,36 +478,48 @@ export const Header: React.FC<HeaderProps> = ({
               </Link>
             ) : (
               <motion.button
-                whileTap={{ scale: 0.92 }}
+                whileTap={{ scale: 0.94 }}
+                whileHover={{ scale: 1.04 }}
                 onClick={onOpenLogin}
-                className="px-2.5 py-1.5 text-xs font-extrabold rounded-xl bg-brand-500 text-white shadow-sm"
+                className="px-3.5 py-2 text-xs font-black rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
               >
-                Entrar
+                <UserPlus className="w-3.5 h-3.5 shrink-0" />
+                <span>Cadastre-se Grátis</span>
               </motion.button>
             )}
 
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Abrir menu de navegação"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-5 h-5 text-brand-500" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </motion.button>
+            {user && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="w-10 h-10 touch-target rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                aria-controls={mobileMenuId}
+                aria-expanded={isMobileMenuOpen}
+                aria-label={isMobileMenuOpen ? "Fechar menu de navegação" : "Abrir menu de navegação e administração"}
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-brand-500" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </motion.button>
+            )}
           </div>
         </div>
       </header>
 
       {/* DRAWER MOBILE DE NAVEGAÇÃO */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 sm:hidden flex flex-col justify-end bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="flex-1" onClick={() => setIsMobileMenuOpen(false)} />
+      {isMobileMenuOpen && user && (
+        <div
+          id={mobileMenuId}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={mobileMenuTitleId}
+          className="fixed inset-0 z-50 sm:hidden flex flex-col justify-end bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="flex-1" aria-hidden="true" onClick={() => setIsMobileMenuOpen(false)} />
 
-          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4 animate-in slide-in-from-bottom duration-300">
+          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto overscroll-contain space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <img
@@ -500,13 +527,14 @@ export const Header: React.FC<HeaderProps> = ({
                   alt="Logo"
                   className="w-9 h-9 object-contain"
                 />
-                <span className="font-black text-sm text-slate-900 dark:text-white">
+                <span id={mobileMenuTitleId} className="font-black text-sm text-slate-900 dark:text-white">
                   Menu de Navegação
                 </span>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl bg-slate-100 dark:bg-slate-800"
+                className="w-11 h-11 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center"
+                aria-label="Fechar menu de navegação"
               >
                 <X className="w-4 h-4" />
               </button>

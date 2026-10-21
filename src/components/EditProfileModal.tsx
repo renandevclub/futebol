@@ -9,7 +9,7 @@ import { UploadProgress } from '@/components/UploadProgress';
 import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { X, Camera, Image as ImageIcon, User, Lock, Save, Loader2, Phone, Instagram, Facebook, Shield, KeyRound, Check, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { cleanPhoneNumber } from '@/lib/phoneUtils';
 
 interface EditProfileModalProps {
@@ -242,9 +242,41 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     });
   };
 
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl space-y-6 relative">
+    <AnimatePresence>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleDragEnd}
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pb-safe"
+      >
+        {/* Alça visual de arraste no mobile */}
+        <div className="pt-3 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>
+
+        {/* Conteúdo com rolagem isolada */}
+        <div className="overflow-y-auto overscroll-contain flex-1 touch-pan-y p-5 sm:p-6 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <h2 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
             <User className="w-5 h-5 text-emerald-500" />
@@ -252,7 +284,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="w-10 h-10 rounded-2xl text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -653,6 +685,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           onClose={() => setIsPasswordModalOpen(false)}
         />
       </div>
+      </motion.div>
     </div>
+    </AnimatePresence>
   );
 };

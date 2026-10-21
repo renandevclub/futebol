@@ -184,7 +184,7 @@ export const PassportModal: React.FC<PassportModalProps> = ({
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-black text-white">{tier.title}</span>
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-bold">
+                              <span className="text-[10px] px-1.5 py-px rounded bg-slate-800 text-slate-400 font-bold">
                                 Nível {tier.level}
                               </span>
                               {isCurrent && (

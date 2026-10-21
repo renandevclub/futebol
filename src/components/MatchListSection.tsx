@@ -805,23 +805,25 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                       }`}
                     />
 
-                    <div className="space-y-3.5 pt-1">
-                      {/* Título centralizado no topo — exclusivo JOGADORES */}
-                      {isPlayer && (
-                        <div className="flex flex-col items-center gap-1.5">
-                          <h3
-                            className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white text-center leading-none tracking-widest uppercase italic group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors"
-                            style={{ fontStretch: "condensed" }}
-                          >
-                            {match.titulo}
-                          </h3>
-                          <div className="w-16 h-1 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                        </div>
-                      )}
-
-                      {/* Top Bar do Card: Vagas à esquerda e GPS / Status à direita (Preenche todo o espaço) */}
+                    <div className="space-y-3 pt-1">
+                      {/* 1. TOP BAR DO CARD: Modalidade + Vagas + Badges + GPS */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          {/* Badge de Modalidade (Futebol ou Vôlei) */}
+                          <div
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 border ${
+                              match.sport_type === "volei"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                            }`}
+                          >
+                            <span>
+                              {match.sport_type === "volei"
+                                ? "🏐 Vôlei"
+                                : "⚽ Futebol"}
+                            </span>
+                          </div>
+
                           {/* Badge de Vagas */}
                           <div
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0 ${
@@ -838,96 +840,27 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                                 </span>
                                 <span>
                                   {remaining}{" "}
-                                  {remaining === 1
-                                    ? "vaga restante"
-                                    : "vagas restantes"}
+                                  {remaining === 1 ? "vaga" : "vagas"}
                                 </span>
                               </>
                             ) : (
                               <>
                                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                                <span>Vagas Esgotadas</span>
+                                <span>Lotada</span>
                               </>
                             )}
                           </div>
 
-                          {/* Badges Administrativas: Modalidade e Modo de Sorteio (Apenas Admin) */}
-                          {isCurrentLeagueAdmin && (
-                            <>
-                              {/* Badge de Modalidade (Futebol ou Vôlei) */}
-                              <div
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 border ${
-                                  match.sport_type === "volei"
-                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                }`}
-                              >
-                                <span>
-                                  {match.sport_type === "volei"
-                                    ? "🏐 Vôlei"
-                                    : "⚽ Futebol"}
-                                </span>
-                              </div>
-
-                              {/* Badge Raspadinha / Manual */}
-                              {match.sorteio_raspadinha_ativo ? (
-                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0">
-                                  <Sparkles
-                                    className="w-3 h-3 text-amber-500 animate-spin"
-                                    style={{ animationDuration: "6s" }}
-                                  />
-                                  <span>Raspadinha</span>
-                                </div>
-                              ) : (
-                                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0">
-                                  <Hand className="w-3 h-3 text-emerald-500" />
-                                  <span>Manual</span>
-                                </div>
-                              )}
-                            </>
+                          {/* Badge Raspadinha */}
+                          {match.sorteio_raspadinha_ativo && (
+                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                              <Sparkles
+                                className="w-3 h-3 text-amber-500 animate-spin"
+                                style={{ animationDuration: "6s" }}
+                              />
+                              <span>Raspadinha</span>
+                            </div>
                           )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Botão de Localização / GPS integrado no Topo à Direita */}
-                          {!isPlayer &&
-                            (() => {
-                              const getMapUrl = () => {
-                                if (match.maps_url) return match.maps_url;
-                                const locLower = match.local.toLowerCase();
-                                if (locLower.includes("arena 500"))
-                                  return "https://maps.app.goo.gl/Muxi7iWHoeY2PkTB8";
-                                if (locLower.includes("nu rio"))
-                                  return "https://maps.app.goo.gl/axspwsn9hK2kAek19";
-                                return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.local + (match.endereco ? " " + match.endereco : ""))}`;
-                              };
-                              const mapUrl = getMapUrl();
-
-                              return (
-                                <motion.button
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.94 }}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(mapUrl, "_blank");
-                                  }}
-                                  className="group/gps inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-950/70 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 border border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/40 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all duration-200 shadow-xs max-w-[160px] sm:max-w-[220px]"
-                                  title="Abrir rota no Google Maps / GPS"
-                                >
-                                  <div className="flex items-center justify-center w-3.5 h-3.5 rounded-md bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 group-hover/gps:bg-emerald-500 group-hover/gps:text-white transition-colors duration-200">
-                                    <MapPin className="w-2.5 h-2.5 shrink-0 group-hover/gps:scale-110 transition-transform duration-200" />
-                                  </div>
-                                  <span className="font-extrabold text-[11px] sm:text-xs tracking-tight truncate">
-                                    {match.local}
-                                  </span>
-                                  <span className="hidden min-[380px]:inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-emerald-500/15 dark:bg-emerald-500/25 group-hover/gps:bg-emerald-500 group-hover/gps:text-white text-emerald-600 dark:text-emerald-300 text-[9px] font-black uppercase tracking-wider transition-colors duration-200">
-                                    <Navigation className="w-2 h-2 shrink-0" />
-                                    <span>GPS</span>
-                                  </span>
-                                </motion.button>
-                              );
-                            })()}
 
                           {/* Badge de Usuário Inscrito */}
                           {isJoined && (
@@ -937,77 +870,59 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Botão de Localização / GPS compacto */}
+                        {(() => {
+                          const getMapUrl = () => {
+                            if (match.maps_url) return match.maps_url;
+                            const locLower = match.local.toLowerCase();
+                            if (locLower.includes("arena 500"))
+                              return "https://maps.app.goo.gl/Muxi7iWHoeY2PkTB8";
+                            if (locLower.includes("nu rio"))
+                              return "https://maps.app.goo.gl/axspwsn9hK2kAek19";
+                            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.local + (match.endereco ? " " + match.endereco : ""))}`;
+                          };
+                          const mapUrl = getMapUrl();
+
+                          return (
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.94 }}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(mapUrl, "_blank");
+                              }}
+                              className="group/gps inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-950/70 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 border border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/40 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all duration-200 shadow-xs max-w-[130px] sm:max-w-[200px] shrink-0 cursor-pointer"
+                              title="Abrir rota no Google Maps / GPS"
+                            >
+                              <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span className="font-extrabold text-[11px] sm:text-xs tracking-tight truncate">
+                                {match.local}
+                              </span>
+                            </motion.button>
+                          );
+                        })()}
                       </div>
 
-                      {/* Título da Partida com Destaque Máximo — apenas Admin */}
-                      {!isPlayer && (
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className={`w-2.5 h-7 sm:h-8 rounded-full shrink-0 ${
-                              match.sport_type === "volei"
-                                ? "bg-gradient-to-b from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
-                                : "bg-gradient-to-b from-brand-400 via-emerald-500 to-teal-600 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
-                            }`}
-                          />
-                          <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors leading-tight tracking-tight">
-                            {match.titulo}
-                          </h3>
-                        </div>
-                      )}
+                      {/* 2. TÍTULO DO CONFRONTO UNIFICADO */}
+                      <div className="flex items-center gap-2.5 min-w-0 pt-0.5">
+                        <div
+                          className={`w-2 h-7 sm:h-8 rounded-full shrink-0 ${
+                            match.sport_type === "volei"
+                              ? "bg-gradient-to-b from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                              : "bg-gradient-to-b from-brand-400 via-emerald-500 to-teal-600 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
+                          }`}
+                        />
+                        <h3 className="font-black text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors leading-tight tracking-tight truncate">
+                          {match.titulo}
+                        </h3>
+                      </div>
 
-                      {/* Cronômetro Regressivo */}
+                      {/* 3. CRONÔMETRO REGRESSIVO */}
                       <div>
                         <MatchCountdown match={match} />
                       </div>
-
-                      {/* ═══ Bloco "COMO CHEGAR" — exclusivo para JOGADORES ═══ */}
-                      {isPlayer && (
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          whileHover={{ scale: 1.02 }}
-                          type="button"
-                          animate={{
-                            boxShadow: [
-                              "0 0 6px rgba(16, 185, 129, 0.15), 0 0 14px rgba(16, 185, 129, 0.06)",
-                              "0 0 14px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.12)",
-                              "0 0 6px rgba(16, 185, 129, 0.15), 0 0 14px rgba(16, 185, 129, 0.06)",
-                            ],
-                          }}
-                          transition={{
-                            boxShadow: {
-                              duration: 2.5,
-                              ease: "easeInOut",
-                              repeat: Infinity,
-                            },
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(mapUrl, "_blank");
-                          }}
-                          className="w-full flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 rounded-2xl bg-emerald-500/[0.07] dark:bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 transition-all duration-200 cursor-pointer group/nav"
-                          title="Abrir rota no Google Maps"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                              <MapPin className="w-4 h-4 text-emerald-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <span className="block font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 truncate">
-                                {match.local}
-                              </span>
-                              {match.endereco && (
-                                <span className="block text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                                  {match.endereco}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 shadow-md shadow-emerald-500/25 group-hover/nav:bg-emerald-600 transition-colors duration-200">
-                            <Navigation className="w-3 h-3 shrink-0" />
-                            <span>COMO CHEGAR</span>
-                          </div>
-                        </motion.button>
-                      )}
 
                       {/* Painel de 4 Informações Essenciais */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 sm:p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 text-xs">
@@ -1142,11 +1057,14 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                              try { navigator.vibrate(15); } catch {}
+                            }
                             onSelectMatch(match.id);
                           }}
-                          className="flex-1 py-3 px-3 rounded-2xl text-xs font-black bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          className="flex-1 min-h-[44px] py-2.5 px-3 rounded-2xl text-xs font-black bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                         >
-                          <Info className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <Info className="w-4 h-4 text-emerald-500 shrink-0" />
                           <span className="truncate">Detalhes</span>
                         </motion.button>
 
@@ -1155,9 +1073,14 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                           whileTap={{ scale: 0.94 }}
                           whileHover={{ scale: 1.02 }}
                           type="button"
-                          onClick={(e) => handleToggleJoin(e, match)}
+                          onClick={(e) => {
+                            if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                              try { navigator.vibrate(25); } catch {}
+                            }
+                            handleToggleJoin(e, match);
+                          }}
                           disabled={!isJoined && isFull}
-                          className={`flex-1 py-3 px-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                          className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
                             isJoined
                               ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
                               : isFull
@@ -1167,14 +1090,14 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                         >
                           {isJoined ? (
                             <>
-                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
                               <span className="truncate">Inscrito (Sair)</span>
                             </>
                           ) : isFull ? (
                             <span className="truncate">Partida Lotada</span>
                           ) : (
                             <>
-                              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                              <Sparkles className="w-4 h-4 shrink-0 text-amber-300" />
                               <span className="truncate">Quero Participar</span>
                             </>
                           )}

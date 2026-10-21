@@ -1004,11 +1004,11 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-24 sm:pb-12 pb-safe">
       {/* ──────────────────────────────────────────────────────────────────────
           1. CABEÇALHO ADMINISTRATIVO COMPACTO E INTUITIVO
       ────────────────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
+      <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs pt-safe">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -1148,7 +1148,7 @@ export default function UserManagementPage() {
 
         {/* Abas do Super Administrador: Usuários, Convites, Recuperações e Auditoria */}
         {isSuperAdmin && (
-          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-850 rounded-2xl overflow-x-auto scrollbar-none max-w-full">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-2xl overflow-x-auto scrollbar-none max-w-full">
             <button
               onClick={() => setActiveTab("users")}
               className={`px-3 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
@@ -1247,7 +1247,7 @@ export default function UserManagementPage() {
                     <SlidersHorizontal className="w-3.5 h-3.5" />
                     <span>Filtros</span>
                     {activeFiltersCount > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/30 text-white font-black">
+                      <span className="px-1.5 py-px rounded-full text-[10px] bg-white/30 text-white font-black">
                         {activeFiltersCount}
                       </span>
                     )}
@@ -1449,7 +1449,7 @@ export default function UserManagementPage() {
                       <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800" />
                       <div className="space-y-1.5">
                         <div className="w-36 h-3.5 bg-slate-200 dark:bg-slate-800 rounded" />
-                        <div className="w-24 h-2.5 bg-slate-100 dark:bg-slate-850 rounded" />
+                        <div className="w-24 h-2.5 bg-slate-100 dark:bg-slate-800 rounded" />
                       </div>
                     </div>
                     <div className="w-20 h-6 bg-slate-200 dark:bg-slate-800 rounded-full" />
@@ -1518,7 +1518,7 @@ export default function UserManagementPage() {
                       <button
                         type="button"
                         onClick={() => toggleUserAccordion(item.id)}
-                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-850/50"
+                        className="w-full p-3.5 sm:p-4 flex items-center justify-between gap-3 text-left cursor-pointer transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Avatar */}
@@ -1546,7 +1546,7 @@ export default function UserManagementPage() {
                                 </span>
                               )}
                               {isCurrentUser && (
-                                <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 px-1.5 py-0.2 rounded-full border border-brand-500/30">
+                                <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/60 px-1.5 py-px rounded-full border border-brand-500/30">
                                   Você
                                 </span>
                               )}
@@ -1822,7 +1822,7 @@ export default function UserManagementPage() {
                                         className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
                                           isLeagueAdmin
                                             ? "bg-blue-500/5 dark:bg-blue-950/20 border-blue-500/30"
-                                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-750"
+                                            : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                                         }`}
                                       >
                                         <div className="min-w-0">
@@ -2003,7 +2003,7 @@ export default function UserManagementPage() {
                                           className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
                                             isBlocked
                                               ? "bg-red-500/5 dark:bg-red-950/20 border-red-500/30"
-                                              : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-750"
+                                              : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                                           }`}
                                         >
                                           <div className="min-w-0">
@@ -2012,11 +2012,11 @@ export default function UserManagementPage() {
                                                 {lg.name}
                                               </span>
                                               {isBlocked ? (
-                                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">
+                                                <span className="px-1.5 py-px rounded text-[9px] font-black uppercase bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">
                                                   Bloqueada
                                                 </span>
                                               ) : (
-                                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                                <span className="px-1.5 py-px rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                                   Ativa
                                                 </span>
                                               )}

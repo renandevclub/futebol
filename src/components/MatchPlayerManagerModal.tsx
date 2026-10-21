@@ -296,7 +296,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
                 }`}>
                   Gerenciamento da Partida
                 </span>
-                <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="text-[10px] px-2 py-px rounded-full font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   {participants.length} / {totalSlots} Inscritos
                 </span>
               </div>
@@ -540,7 +540,7 @@ export const MatchPlayerManagerModal: React.FC<MatchPlayerManagerModalProps> = (
                                 </span>
                               )}
                               {p.paid ? (
-                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black shrink-0">
+                                <span className="text-[10px] px-1.5 py-px rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black shrink-0">
                                   Pago ✅
                                 </span>
                               ) : null}

@@ -224,6 +224,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
       return;
     }
 
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+
     if (currentLiked) {
       await supabase
         .from('comment_likes')
@@ -446,18 +450,18 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           </div>
         )}
 
-        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 sm:p-2 rounded-2xl border border-slate-200 dark:border-slate-700">
           <input
             type="text"
             placeholder={user ? 'Escreva um comentário...' : 'Identifique-se para comentar'}
             value={newCommentText}
             onChange={(e) => setNewCommentText(e.target.value)}
             disabled={submitting}
-            className="flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white focus:outline-none px-2"
+            className="flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white focus:outline-none px-2 min-h-[40px]"
           />
 
           {/* Anexar Imagem */}
-          <label className="p-1.5 text-slate-500 hover:text-brand-500 cursor-pointer rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <label className="p-2 sm:p-2.5 text-slate-500 hover:text-brand-500 cursor-pointer rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation">
             <ImageIcon className="w-4 h-4" />
             <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           </label>
@@ -465,8 +469,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           {/* Emojis Rápidos */}
           <button
             type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="p-1.5 text-slate-500 hover:text-amber-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            onClick={() => {
+              if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                navigator.vibrate(10);
+              }
+              setShowEmojiPicker(!showEmojiPicker);
+            }}
+            className="p-2 sm:p-2.5 text-slate-500 hover:text-amber-500 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation cursor-pointer"
           >
             <Smile className="w-4 h-4" />
           </button>
@@ -474,12 +483,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, postAuth
           {/* Enviar */}
           <motion.button
             whileTap={{ scale: 0.88 }}
-            whileHover={{ scale: 1.08 }}
+            whileHover={{ scale: 1.05 }}
             type="submit"
             disabled={submitting}
-            className="p-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold shadow-md transition-all disabled:opacity-50"
+            onClick={() => {
+              if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                navigator.vibrate(12);
+              }
+            }}
+            className="p-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold shadow-md transition-all disabled:opacity-50 shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation cursor-pointer"
           >
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </motion.button>
         </div>
 

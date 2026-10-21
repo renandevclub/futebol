@@ -27,7 +27,9 @@ export const subscribeToTables = (
     }, 120);
   };
 
-  let channel = supabase.channel(channelName);
+  // Gera um identificador único para evitar colisões entre instâncias de componentes e remounts do React
+  const uniqueChannelId = `${channelName}_${Math.random().toString(36).substring(2, 8)}`;
+  let channel = supabase.channel(uniqueChannelId);
 
   tables.forEach(({ table, filter }) => {
     if (filter) {
@@ -47,7 +49,18 @@ export const subscribeToTables = (
 
   channel.subscribe((status, error) => {
     if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-      console.error(`[Realtime] ${channelName} ${status}`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error || '');
+      const isTransient =
+        errorMessage.includes('1006') ||
+        errorMessage.includes('socket closed') ||
+        (typeof navigator !== 'undefined' && !navigator.onLine);
+
+      if (isTransient) {
+        // Desconexões temporárias normais tratadas automaticamente com reconexão pelo Supabase
+        console.warn(`[Realtime] ${channelName} em reconexão (${status}): ${errorMessage}`);
+      } else {
+        console.error(`[Realtime] ${channelName} ${status}:`, error);
+      }
     }
   });
 

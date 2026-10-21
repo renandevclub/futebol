@@ -487,7 +487,7 @@ function AdminFinanceContent() {
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
       />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-24 sm:pb-8 pb-safe space-y-5 sm:space-y-6">
         {/* Breadcrumb & Título */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">

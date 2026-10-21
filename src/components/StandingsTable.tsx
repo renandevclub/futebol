@@ -377,8 +377,93 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
           </div>
         </div>
 
-        {/* Tabela Responsiva */}
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
+        {/* VISUALIZAÇÃO MOBILE (CARDS DE EQUIPES) */}
+        <div className="block sm:hidden space-y-2.5">
+          {standings.map((st, idx) => {
+            const pos = idx + 1;
+            const isLeader = pos === 1 && st.points > 0;
+            return (
+              <div
+                key={st.team}
+                className={`p-3.5 rounded-2xl border transition-all ${
+                  isLeader
+                    ? 'bg-amber-500/10 border-amber-500/30 shadow-xs'
+                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
+                        pos === 1
+                          ? 'bg-amber-400 text-slate-950 shadow-xs'
+                          : pos === 2
+                          ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
+                          : pos === 3
+                          ? 'bg-amber-700/30 text-amber-600 dark:text-amber-400'
+                          : 'text-slate-400 bg-slate-100 dark:bg-slate-800'
+                      }`}
+                    >
+                      {pos}º
+                    </span>
+
+                    <TeamBadge
+                      teamInfo={{
+                        name: st.teamName,
+                        emoji: st.teamEmoji,
+                        badge_url: st.teamBadgeUrl,
+                        color: st.teamColor,
+                      }}
+                      size="xs"
+                      rounded="md"
+                      showBorder={false}
+                    />
+
+                    <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                      {st.teamName}
+                    </span>
+                  </div>
+
+                  {/* Pontos em destaque */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="px-2.5 py-1 rounded-xl bg-brand-500/15 text-brand-600 dark:text-brand-400 font-black text-xs border border-brand-500/25">
+                      {st.points} {st.points === 1 ? 'pt' : 'pts'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Linha de Estatísticas Rápidas */}
+                <div className="grid grid-cols-4 gap-1 pt-2.5 mt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 text-center text-[11px]">
+                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
+                    <span className="block text-[9px] font-black text-slate-400 uppercase">Jogos</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{st.matchesPlayed}</span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
+                    <span className="block text-[9px] font-black text-slate-400 uppercase">Vitórias</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{st.wins}V</span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
+                    <span className="block text-[9px] font-black text-slate-400 uppercase">
+                      {isVolei ? 'Pontos' : 'Gols'}
+                    </span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">
+                      {st.goalsFor}:{st.goalsAgainst}
+                    </span>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
+                    <span className="block text-[9px] font-black text-slate-400 uppercase">Saldo</span>
+                    <span className={`font-bold ${st.goalDifference > 0 ? 'text-emerald-500' : st.goalDifference < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                      {st.goalDifference > 0 ? `+${st.goalDifference}` : st.goalDifference}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tabela Tradicional para Desktops */}
+        <div className="hidden sm:block overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-left text-xs min-w-[500px]">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-black tracking-wider text-slate-400">

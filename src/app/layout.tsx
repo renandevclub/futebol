@@ -54,14 +54,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#16a34a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#16a34a" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
 };
 
+import { Suspense } from "react";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { BottomNavBar } from "@/components/BottomNavBar";
+import { ModalAccessibilityManager } from "@/components/ModalAccessibilityManager";
 import { LeagueProvider } from "@/context/LeagueContext";
 
 export default function RootLayout({
@@ -76,7 +82,13 @@ export default function RootLayout({
           <LeagueProvider>
             <ServiceWorkerRegister />
             <PwaInstallPrompt />
-            {children}
+            <ModalAccessibilityManager />
+            <div className="min-h-dvh flex flex-col">
+              {children}
+            </div>
+            <Suspense fallback={null}>
+              <BottomNavBar />
+            </Suspense>
             <Toaster position="top-right" richColors closeButton />
           </LeagueProvider>
         </AuthProvider>

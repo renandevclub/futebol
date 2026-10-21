@@ -1351,7 +1351,7 @@ export default function MatchDetailPage({
                     <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm leading-tight inline-block">
                       {displayName}
                     </span>
-                    <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                    <span className="px-1.5 py-px rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                       Avulso
                     </span>
                   </div>
@@ -1443,7 +1443,7 @@ export default function MatchDetailPage({
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
       />
 
-      <main className="max-w-3xl mx-auto px-3.5 sm:px-4 py-4 sm:py-6 w-full flex-1 space-y-4 sm:space-y-6">
+      <main className="max-w-3xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-24 sm:pb-8 pb-safe w-full flex-1 space-y-4 sm:space-y-6">
         {/* Voltar */}
         <Link
           href="/"
@@ -1781,7 +1781,7 @@ export default function MatchDetailPage({
                   {/* Badge de Modo de Sorteio (Apenas Admin) */}
                   {isAdmin &&
                     (match.sorteio_raspadinha_ativo ? (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs backdrop-blur-xs shrink-0">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs backdrop-blur-sm shrink-0">
                         <Sparkles
                           className="w-3.5 h-3.5 text-amber-500 animate-spin"
                           style={{ animationDuration: "6s" }}
@@ -2323,12 +2323,17 @@ export default function MatchDetailPage({
         </div>
 
         {/* Alternador de Abas da Partida */}
-        <div className="flex items-center justify-center">
-          <div className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1">
+        <div className="flex items-center justify-center w-full overflow-x-auto scrollbar-none py-1">
+          <div className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1.5 shrink-0 max-w-full overflow-x-auto scrollbar-none">
             <motion.button
               whileTap={{ scale: 0.94 }}
-              onClick={() => setMatchTab("info")}
-              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+              onClick={() => {
+                if (typeof window !== "undefined" && "vibrate" in navigator) {
+                  navigator.vibrate(10);
+                }
+                setMatchTab("info");
+              }}
+              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
                 matchTab === "info"
                   ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -2341,8 +2346,13 @@ export default function MatchDetailPage({
             {isPlayer ? (
               <motion.button
                 whileTap={{ scale: 0.94 }}
-                onClick={() => setIsFinanceModalOpen(true)}
-                className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 cursor-pointer shadow-xs"
+                onClick={() => {
+                  if (typeof window !== "undefined" && "vibrate" in navigator) {
+                    navigator.vibrate(10);
+                  }
+                  setIsFinanceModalOpen(true);
+                }}
+                className="px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 cursor-pointer shadow-xs"
                 title="Visualizar prestação de contas, transparência e pagamentos da partida"
               >
                 <Receipt className="w-3.5 h-3.5 text-emerald-500" />
@@ -2351,8 +2361,13 @@ export default function MatchDetailPage({
             ) : (
               <motion.button
                 whileTap={{ scale: 0.94 }}
-                onClick={() => setMatchTab("scoreboard")}
-                className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+                onClick={() => {
+                  if (typeof window !== "undefined" && "vibrate" in navigator) {
+                    navigator.vibrate(10);
+                  }
+                  setMatchTab("scoreboard");
+                }}
+                className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
                   matchTab === "scoreboard"
                     ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -2365,8 +2380,13 @@ export default function MatchDetailPage({
 
             <motion.button
               whileTap={{ scale: 0.94 }}
-              onClick={() => setMatchTab("standings")}
-              className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 ${
+              onClick={() => {
+                if (typeof window !== "undefined" && "vibrate" in navigator) {
+                  navigator.vibrate(10);
+                }
+                setMatchTab("standings");
+              }}
+              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
                 matchTab === "standings"
                   ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -2551,6 +2571,43 @@ export default function MatchDetailPage({
                       Recolher Todos
                     </button>
                   </div>
+                </div>
+
+                {/* Abas Rápidas de Navegação entre Times no Mobile */}
+                <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+                  <button
+                    type="button"
+                    onClick={handleExpandAllTeams}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
+                      expandedTeams.length === match.num_times
+                        ? 'bg-brand-500 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    Todos ({participants.length})
+                  </button>
+                  {Array.from({ length: match.num_times }).map((_, idx) => {
+                    const tNum = idx + 1;
+                    const tConf = getTeamInfo(match, tNum);
+                    const tCount = teamGroups[tNum]?.length || 0;
+                    const isSelected = expandedTeams.length === 1 && expandedTeams[0] === tNum;
+                    return (
+                      <button
+                        key={tNum}
+                        type="button"
+                        onClick={() => setExpandedTeams([tNum])}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          isSelected
+                            ? `${tConf.border} bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs`
+                            : 'border-transparent bg-slate-100 dark:bg-slate-800/60 text-slate-500'
+                        }`}
+                      >
+                        <span>{tConf.emoji || '⚽'}</span>
+                        <span>{tConf.name}</span>
+                        <span className="text-[10px] opacity-75 font-bold">({tCount})</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
@@ -2930,6 +2987,155 @@ export default function MatchDetailPage({
           </>
         )}
       </main>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* BARRA FIXA INFERIOR MOBILE (STICKY THUMB ZONE ACTION BAR) */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800/90 px-3.5 py-2.5 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2.5">
+          {!user ? (
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Partida Aberta
+                </span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {remaining > 0 ? `${remaining} vagas restantes` : 'Vagas esgotadas'}
+                </span>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                onClick={() => setIsLoginOpen(true)}
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
+              >
+                <span>Entrar / Cadastrar</span>
+              </motion.button>
+            </div>
+          ) : isEnded ? (
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
+                  Partida Finalizada
+                </span>
+              </div>
+              <button
+                onClick={() => setIsChampionModalOpen(true)}
+                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1.5"
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Ver Campeão</span>
+              </button>
+            </div>
+          ) : isJoined ? (
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                {currentParticipant?.team != null ? (
+                  <>
+                    <TeamBadge
+                      teamInfo={getTeamInfo(match, currentParticipant.team)}
+                      size="xs"
+                      rounded="lg"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 block leading-tight">
+                        Você está no
+                      </span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white truncate block">
+                        {getTeamInfo(match, currentParticipant.team).name}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black uppercase text-amber-500 block leading-tight">
+                      Inscrição Ativa
+                    </span>
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate block">
+                      Aguardando Sorteio
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {match.sorteio_raspadinha_ativo && currentParticipant?.team == null && (
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => setIsScratchCardOpen(true)}
+                    className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 animate-pulse"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                    <span>Raspadinha</span>
+                  </motion.button>
+                )}
+
+                {match.valor > 0 && !currentParticipant?.paid && (
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => setIsPixModalOpen(true)}
+                    className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Pagar PIX</span>
+                  </motion.button>
+                )}
+
+                {match.valor > 0 && currentParticipant?.paid && (
+                  <span className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Pago</span>
+                  </span>
+                )}
+
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  onClick={handleToggleJoin}
+                  className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-500/10 dark:bg-slate-800 text-slate-500 hover:text-rose-500 font-bold text-xs transition-colors"
+                  title="Sair da Partida"
+                >
+                  <XCircle className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full flex items-center justify-between gap-2.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isFull ? 'bg-rose-500' : 'bg-emerald-500 animate-ping'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {isFull ? 'Esgotado' : `${remaining} vagas livres`}
+                  </span>
+                </div>
+                <span className="text-xs font-black text-slate-900 dark:text-white truncate block">
+                  {match.valor > 0 ? `R$ ${match.valor.toFixed(2)}` : 'Inscrição Grátis'}
+                </span>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                whileHover={{ scale: 1.02 }}
+                disabled={isFull}
+                onClick={handleToggleJoin}
+                className={`flex-1 max-w-[210px] py-2.5 px-3 rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 ${
+                  isFull
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-emerald-500 via-brand-500 to-teal-500 text-white shadow-emerald-500/25'
+                }`}
+              >
+                {isFull ? (
+                  <span>Lotada</span>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="truncate">Quero Participar</span>
+                  </>
+                )}
+              </motion.button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* MODAL DE RASPADINHA VIRTUAL INDIVIDUAL */}
       {match && (
