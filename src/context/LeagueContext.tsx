@@ -24,11 +24,16 @@ interface CreateLeagueParams {
   access_password?: string;
 }
 
+export type LeagueTab = "matches" | "tournaments" | "standings" | "feed" | "members";
+
 interface LeagueContextType {
   leagues: League[];
   currentLeague: League | null;
   selectedLeagueId: string | null;
+  activeTab: LeagueTab;
+  setActiveTab: (tab: LeagueTab) => void;
   myLeagues: League[];
+  userParticipatingLeagues: League[];
   userMemberLeagueIds: string[];
   userAdminLeagueIds: string[];
   isLoading: boolean;
@@ -56,9 +61,46 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const [leagues, setLeagues] = useState<League[]>([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
+  const [activeTab, setActiveTabState] = useState<LeagueTab>("matches");
   const [userMemberLeagueIds, setUserMemberLeagueIds] = useState<string[]>([]);
   const [userAdminLeagueIds, setUserAdminLeagueIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Sincronizar activeTab inicial a partir da URL e com o histórico (botão voltar/avançar)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const parseTabFromUrl = (): LeagueTab | null => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "feed" || params.has("post")) return "feed";
+      if (tabParam === "matches") return "matches";
+      if (tabParam === "standings" || tabParam === "ranking") return "standings";
+      if (tabParam === "tournaments") return "tournaments";
+      if (tabParam === "members" || tabParam === "jogadores") return "members";
+      return null;
+    };
+
+    const initial = parseTabFromUrl();
+    if (initial) setActiveTabState(initial);
+
+    const handlePopState = () => {
+      const tab = parseTabFromUrl();
+      if (tab) setActiveTabState(tab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const setActiveTab = useCallback((tab: LeagueTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, []);
 
   // Carregar lista de Ligas com perfis de administradores e contagem de partidas
   const fetchLeagues = useCallback(async () => {
@@ -204,6 +246,18 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (isSuperAdmin) return leagues;
     return leagues.filter((l) => l.owner_id === user.id || userAdminLeagueIds.includes(l.id));
   }, [leagues, user, isSuperAdmin, userAdminLeagueIds]);
+
+  // Todas as ligas das quais o usuário participa (membro, organizador ou administrador)
+  const userParticipatingLeagues = React.useMemo(() => {
+    if (!user) return [];
+    if (isSuperAdmin) return leagues;
+    return leagues.filter((l) => {
+      const isOwner = l.owner_id === user.id;
+      const isMember = userMemberLeagueIds.includes(l.id);
+      const isAdminRole = userAdminLeagueIds.includes(l.id);
+      return isOwner || isMember || isAdminRole;
+    });
+  }, [leagues, user, isSuperAdmin, userMemberLeagueIds, userAdminLeagueIds]);
 
   // Verificar se o usuário atual pode criar ligas
   const canCreateLeagues = isSuperAdmin || (isAdmin && user?.can_create_leagues !== false);
@@ -529,7 +583,10 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         leagues,
         currentLeague,
         selectedLeagueId,
+        activeTab,
+        setActiveTab,
         myLeagues,
+        userParticipatingLeagues,
         userMemberLeagueIds,
         userAdminLeagueIds,
         isLoading,

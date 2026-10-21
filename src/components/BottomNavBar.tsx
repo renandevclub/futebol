@@ -2,19 +2,18 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLeague } from "@/context/LeagueContext";
 import {
   Calendar,
-  Trophy,
   MessageSquare,
   Wallet,
-  User,
   LogIn,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
+
 const MyWalletModal = dynamic(
   () => import("@/components/MyWalletModal").then((m) => m.MyWalletModal),
   { ssr: false },
@@ -23,21 +22,41 @@ const LoginModal = dynamic(
   () => import("@/components/LoginModal").then((m) => m.LoginModal),
   { ssr: false },
 );
+const LeagueSelectNavigationModal = dynamic(
+  () =>
+    import("@/components/LeagueSelectNavigationModal").then(
+      (m) => m.LeagueSelectNavigationModal,
+    ),
+  { ssr: false },
+);
+
 import { getUnreadNotificationCount } from "@/lib/notifications";
 import { getLeagueWallet } from "@/lib/financeHelper";
 import { subscribeToTables } from "@/lib/realtime";
 
 export const BottomNavBar: React.FC = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { currentLeague } = useLeague();
+  const {
+    currentLeague,
+    userParticipatingLeagues,
+    selectLeague,
+    clearSelectedLeague,
+    activeTab,
+    setActiveTab,
+  } = useLeague();
 
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
   const [currentWalletBalance, setCurrentWalletBalance] = useState<number | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
+
+  // Controle do modal de navegação inteligente (Partidas / Resenha)
+  const [isNavModalOpen, setIsNavModalOpen] = useState(false);
+  const [navModalMode, setNavModalMode] = useState<"matches" | "feed">("matches");
 
   // Não exibir barra de navegação inferior na página pública (/ quando visitante não autenticado),
   // nas telas de partida (/matches/...), controle ou telão TV
@@ -56,7 +75,7 @@ export const BottomNavBar: React.FC = () => {
       try {
         navigator.vibrate(15);
       } catch {
-        // Ignora silenciosamente se o navegador bloquear vibração
+        // Ignora se o navegador bloquear vibração
       }
     }
   };
@@ -89,8 +108,6 @@ export const BottomNavBar: React.FC = () => {
     }
   }, [user?.id, currentLeague?.id]);
 
-  // Mantém a primeira renderização do cliente igual à renderização do servidor.
-  // A autenticação vem do navegador e pode terminar antes da hidratação desta barra.
   useEffect(() => {
     setHasHydrated(true);
   }, []);
@@ -128,15 +145,84 @@ export const BottomNavBar: React.FC = () => {
     };
   }, [hasHydrated, shouldHideBottomNav, user?.id, loadUnreadCount, loadWalletBalance]);
 
-  const activeHomeTab = searchParams.get("tab");
-  const isFeedActive = pathname === "/" && activeHomeTab === "feed";
-  const isStandingsActive =
-    pathname.startsWith("/standings") ||
-    (pathname === "/" && (activeHomeTab === "standings" || activeHomeTab === "ranking"));
+  // ═══════════════════════════════════════════════════════════════════
+  // NAVEGAÇÃO INTELIGENTE (PARTIDAS & RESENHA) - RESPOSTA IMEDIATA EM 1 CLIQUE
+  // ═══════════════════════════════════════════════════════════════════
+
+  const handleMatchesClick = () => {
+    triggerHaptic();
+
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    const leagues = userParticipatingLeagues || [];
+
+    if (leagues.length === 1) {
+      // 1 única liga: seleciona e abre diretamente
+      selectLeague(leagues[0].id);
+      setActiveTab("matches");
+      if (pathname !== "/") {
+        router.push("/?tab=matches");
+      }
+    } else {
+      // 0 ligas ou 2+ ligas: abre modal inteligente
+      setNavModalMode("matches");
+      setIsNavModalOpen(true);
+    }
+  };
+
+  const handleFeedClick = () => {
+    triggerHaptic();
+
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    const leagues = userParticipatingLeagues || [];
+
+    if (leagues.length === 1) {
+      // 1 única liga: seleciona e abre diretamente o feed
+      selectLeague(leagues[0].id);
+      setActiveTab("feed");
+      if (pathname !== "/") {
+        router.push("/?tab=feed");
+      }
+    } else {
+      // 0 ligas ou 2+ ligas: abre modal inteligente
+      setNavModalMode("feed");
+      setIsNavModalOpen(true);
+    }
+  };
+
+  const handleSelectLeagueFromModal = (leagueId: string) => {
+    selectLeague(leagueId);
+    const targetTab = navModalMode === "matches" ? "matches" : "feed";
+    setActiveTab(targetTab);
+    if (pathname !== "/") {
+      router.push(`/?tab=${targetTab}`);
+    }
+  };
+
+  const handleExploreLeagues = () => {
+    clearSelectedLeague();
+    if (pathname !== "/") {
+      router.push("/?explore=1");
+    } else {
+      window.history.replaceState(null, "", "/?explore=1");
+      window.dispatchEvent(new Event("popstate"));
+    }
+  };
+
+  // Estados ativos das abas em tempo real com activeTab sincronizado
+  const isFeedActive = pathname === "/" && activeTab === "feed";
   const isProfileActive = user ? pathname.startsWith(`/profile/${user.id}`) : false;
   const isMatchesActive =
-    (pathname === "/" && (!activeHomeTab || activeHomeTab === "matches")) ||
+    (pathname === "/" && activeTab === "matches") ||
     (pathname.startsWith("/matches") && !pathname.includes("/tv"));
+
 
   const isVolei = currentLeague?.sport_type === "volei";
   const activeColor = isVolei ? "text-amber-500" : "text-emerald-500";
@@ -150,21 +236,23 @@ export const BottomNavBar: React.FC = () => {
       {/* Espaçador no fluxo do documento para garantir que o conteúdo não fique escondido sob o menu fixo */}
       <div className="h-16 pb-safe sm:hidden pointer-events-none select-none" aria-hidden="true" />
 
-      {/* Barra de Navegação Inferior Fixa para Dispositivos Móveis (Thumb Zone) */}
+      {/* Barra de Navegação Inferior Fixa Mobile (4 Itens: Partidas, Resenha, Meu Caixa, Perfil) */}
       <nav
         aria-label="Navegação inferior mobile"
-        className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 pb-safe transition-colors shadow-[0_-4px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)]"
+        className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 pb-safe transition-colors shadow-[0_-4px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)]"
       >
-        <div className={`grid ${user ? "grid-cols-5" : "grid-cols-4"} items-center justify-around h-16 max-w-lg mx-auto px-1 relative`}>
-          {/* ABA 1: ⚽ Partidas (ou Liga Ativa) */}
-          <Link
-            href="/"
-            onClick={triggerHaptic}
+        <div className="grid grid-cols-4 items-center justify-around h-16 max-w-lg mx-auto px-1 relative">
+          {/* ═══════════════════════════════════════════════════════════
+              ITEM 1: ⚽ Partidas (Navegação Inteligente)
+          ═══════════════════════════════════════════════════════════ */}
+          <button
+            type="button"
+            onClick={handleMatchesClick}
             aria-current={isMatchesActive ? "page" : undefined}
-            className="relative flex flex-col items-center justify-center h-full touch-target transition-all group select-none"
+            aria-label="Acessar partidas"
+            className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
           >
-            <div className="relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all">
-              {/* Indicador deslizante via framer-motion */}
+            <div className="relative flex items-center justify-center w-12 h-8 rounded-2xl transition-all">
               {isMatchesActive && (
                 <motion.div
                   layoutId="activeTabIndicator"
@@ -187,65 +275,27 @@ export const BottomNavBar: React.FC = () => {
               )}
             </div>
             <span
-              className={`text-[10px] font-black tracking-tight mt-0.5 leading-none transition-colors truncate max-w-[56px] ${
+              className={`text-[10px] sm:text-[11px] font-black tracking-tight mt-0.5 leading-none transition-colors truncate max-w-full px-0.5 ${
                 isMatchesActive
                   ? activeColor
                   : "text-slate-500 dark:text-slate-400"
               }`}
             >
-              {currentLeague ? (isVolei ? "Vôlei" : "Partidas") : "Partidas"}
+              Partidas
             </span>
-          </Link>
+          </button>
 
-          {/* ABA 2: 🏆 Classificação / Torneios */}
-          <Link
-            href="/standings"
-            onClick={triggerHaptic}
-            aria-current={isStandingsActive ? "page" : undefined}
-            className="relative flex flex-col items-center justify-center h-full touch-target transition-all group select-none"
-          >
-            <div className="relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all">
-              {isStandingsActive && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                  className="absolute inset-0 bg-amber-500/15 rounded-2xl -z-10"
-                />
-              )}
-              <Trophy
-                className={`w-5 h-5 transition-transform duration-200 ${
-                  isStandingsActive
-                    ? "text-amber-500 scale-110"
-                    : "text-slate-500 dark:text-slate-400 group-hover:text-amber-500"
-                }`}
-              />
-              {isStandingsActive && (
-                <motion.span
-                  layoutId="activeTabDot"
-                  className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-amber-500"
-                />
-              )}
-            </div>
-            <span
-              className={`text-[10px] font-black tracking-tight mt-0.5 leading-none transition-colors ${
-                isStandingsActive
-                  ? "text-amber-500"
-                  : "text-slate-500 dark:text-slate-400"
-              }`}
-            >
-              Tabela
-            </span>
-          </Link>
-
-          {/* ABA 3: 💬 Feed / Resenha */}
-          {user && (
-            <Link
-            href="/?tab=feed"
-            onClick={triggerHaptic}
+          {/* ═══════════════════════════════════════════════════════════
+              ITEM 2: 💬 Resenha (Navegação Inteligente)
+          ═══════════════════════════════════════════════════════════ */}
+          <button
+            type="button"
+            onClick={handleFeedClick}
             aria-current={isFeedActive ? "page" : undefined}
-            className="relative flex flex-col items-center justify-center h-full touch-target transition-all group select-none"
+            aria-label="Acessar resenha e feed da liga"
+            className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
           >
-            <div className="relative flex items-center justify-center w-11 h-8 rounded-2xl transition-all">
+            <div className="relative flex items-center justify-center w-12 h-8 rounded-2xl transition-all">
               {isFeedActive && (
                 <motion.div
                   layoutId="activeTabIndicator"
@@ -268,16 +318,17 @@ export const BottomNavBar: React.FC = () => {
               )}
             </div>
             <span
-              className={`text-[10px] font-black tracking-tight mt-0.5 leading-none transition-colors ${
+              className={`text-[10px] sm:text-[11px] font-black tracking-tight mt-0.5 leading-none transition-colors truncate max-w-full px-0.5 ${
                 isFeedActive ? activeColor : "text-slate-500 dark:text-slate-400"
               }`}
             >
               Resenha
             </span>
-            </Link>
-          )}
+          </button>
 
-          {/* ABA 4: 💰 Meu Caixa (com Indicador de Saldo Individual por Liga) */}
+          {/* ═══════════════════════════════════════════════════════════
+              ITEM 3: 💰 Meu Caixa (Funcionalidade Financeira Preservada)
+          ═══════════════════════════════════════════════════════════ */}
           <button
             type="button"
             onClick={() => {
@@ -288,10 +339,10 @@ export const BottomNavBar: React.FC = () => {
                 setIsLoginModalOpen(true);
               }
             }}
-            className="relative flex flex-col items-center justify-center h-full touch-target transition-all group cursor-pointer select-none"
+            className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
             aria-label="Abrir meu caixa individual da liga"
           >
-            <div className="relative flex items-center justify-center w-11 h-8 rounded-2xl group-hover:bg-emerald-500/10 transition-all">
+            <div className="relative flex items-center justify-center w-12 h-8 rounded-2xl group-hover:bg-emerald-500/10 transition-all">
               <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
 
               {/* Indicador de Saldo da Liga Atual */}
@@ -305,12 +356,14 @@ export const BottomNavBar: React.FC = () => {
                 <span className="absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500/40" />
               )}
             </div>
-            <span className="text-[10px] font-black tracking-tight mt-0.5 leading-none text-emerald-600 dark:text-emerald-400">
+            <span className="text-[10px] sm:text-[11px] font-black tracking-tight mt-0.5 leading-none text-emerald-600 dark:text-emerald-400 truncate max-w-full px-0.5">
               Meu Caixa
             </span>
           </button>
 
-          {/* ABA 5: 👤 Perfil (com Avatar e Badge de Notificações Integrados) */}
+          {/* ═══════════════════════════════════════════════════════════
+              ITEM 4: 👤 Perfil (Acesso ao Perfil do Usuário / Conta)
+          ═══════════════════════════════════════════════════════════ */}
           {user ? (
             <Link
               href={`/profile/${user.id}`}
@@ -321,9 +374,9 @@ export const BottomNavBar: React.FC = () => {
                   ? `Abrir meu perfil. ${unreadNotificationsCount} notificações não lidas.`
                   : "Abrir meu perfil"
               }
-              className="relative flex flex-col items-center justify-center h-full touch-target transition-all group select-none"
+              className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none"
             >
-              <div className="relative flex items-center justify-center w-11 h-8">
+              <div className="relative flex items-center justify-center w-12 h-8">
                 {isProfileActive && (
                   <motion.div
                     layoutId="activeTabIndicator"
@@ -334,7 +387,9 @@ export const BottomNavBar: React.FC = () => {
                 <div
                   className={`relative w-6 h-6 rounded-full border-2 transition-transform duration-200 ${
                     isProfileActive
-                      ? `${isVolei ? "border-amber-500" : "border-emerald-500"} scale-110 ring-2 ${isVolei ? "ring-amber-500/30" : "ring-emerald-500/30"}`
+                      ? `${isVolei ? "border-amber-500" : "border-emerald-500"} scale-110 ring-2 ${
+                          isVolei ? "ring-amber-500/30" : "ring-emerald-500/30"
+                        }`
                       : "border-slate-300 dark:border-slate-700 group-hover:border-slate-400"
                   }`}
                 >
@@ -359,11 +414,11 @@ export const BottomNavBar: React.FC = () => {
                 </div>
               </div>
               <span
-                className={`text-[10px] font-black tracking-tight mt-0.5 leading-none transition-colors truncate max-w-[54px] ${
+                className={`text-[10px] sm:text-[11px] font-black tracking-tight mt-0.5 leading-none transition-colors truncate max-w-full px-0.5 ${
                   isProfileActive ? activeColor : "text-slate-500 dark:text-slate-400"
                 }`}
               >
-                {user.apelido || user.nome.split(" ")[0]}
+                Perfil
               </span>
             </Link>
           ) : (
@@ -373,21 +428,36 @@ export const BottomNavBar: React.FC = () => {
                 triggerHaptic();
                 setIsLoginModalOpen(true);
               }}
-              className="relative flex flex-col items-center justify-center h-full touch-target transition-all group cursor-pointer select-none"
-              aria-label="Fazer login"
+              className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
+              aria-label="Fazer login ou acessar perfil"
             >
-              <div className="relative flex items-center justify-center w-11 h-8 rounded-2xl group-hover:bg-slate-100 dark:group-hover:bg-slate-900 transition-all">
+              <div className="relative flex items-center justify-center w-12 h-8 rounded-2xl group-hover:bg-slate-100 dark:group-hover:bg-slate-900 transition-all">
                 <LogIn className="w-5 h-5 text-brand-500" />
               </div>
-              <span className="text-[10px] font-black tracking-tight mt-0.5 leading-none text-brand-500">
-                Entrar
+              <span className="text-[10px] sm:text-[11px] font-black tracking-tight mt-0.5 leading-none text-brand-500">
+                Perfil
               </span>
             </button>
           )}
         </div>
       </nav>
 
-      {/* Modais acionados diretamente pelos atalhos da barra inferior */}
+      {/* ═══════════════════════════════════════════════════════════════
+          MODAL DE NAVEGAÇÃO INTELIGENTE (PARTIDAS & RESENHA)
+      ═══════════════════════════════════════════════════════════════ */}
+      {isNavModalOpen && (
+        <LeagueSelectNavigationModal
+          isOpen={isNavModalOpen}
+          mode={navModalMode}
+          leagues={userParticipatingLeagues || []}
+          currentLeagueId={currentLeague?.id || null}
+          onSelectLeague={handleSelectLeagueFromModal}
+          onExploreLeagues={handleExploreLeagues}
+          onClose={() => setIsNavModalOpen(false)}
+        />
+      )}
+
+      {/* Modal Meu Caixa */}
       {isWalletModalOpen && (
         <MyWalletModal
           isOpen={isWalletModalOpen}
@@ -398,6 +468,7 @@ export const BottomNavBar: React.FC = () => {
         />
       )}
 
+      {/* Modal de Login */}
       {isLoginModalOpen && (
         <LoginModal
           isOpen={isLoginModalOpen}

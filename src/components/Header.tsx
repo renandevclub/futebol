@@ -472,22 +472,8 @@ export const Header: React.FC<HeaderProps> = ({
               </motion.button>
             )}
 
-            {user ? (
-              <Link
-                href={`/profile/${user.id}`}
-                className="w-9 h-9 touch-target rounded-full bg-brand-100 dark:bg-brand-950 border border-brand-300 dark:border-brand-700 flex items-center justify-center text-brand-600 dark:text-brand-400 font-bold text-xs overflow-hidden active:scale-90 transition-transform shrink-0"
-              >
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.nome}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  user.nome.charAt(0).toUpperCase()
-                )}
-              </Link>
-            ) : (
+            {/* Botão de Cadastro se Visitante */}
+            {!user && (
               <motion.button
                 whileTap={{ scale: 0.94 }}
                 whileHover={{ scale: 1.04 }}

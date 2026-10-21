@@ -118,6 +118,8 @@ export default function Home() {
     userAdminLeagueIds,
     selectLeague,
     clearSelectedLeague,
+    activeTab,
+    setActiveTab,
     isLoading: isLeaguesLoading,
     canManageLeague,
     canCreateLeagues,
@@ -125,7 +127,8 @@ export default function Home() {
   } = useLeague();
 
   // Abas dentro do Ambiente da Liga Ativa
-  const [leagueTab, setLeagueTab] = useState<"matches" | "tournaments" | "standings" | "feed" | "members">("matches");
+  const leagueTab = activeTab;
+  const setLeagueTab = setActiveTab;
 
   // Estados dos acordeões das categorias de ligas (recolhidos por padrão)
   const [openAccordions, setOpenAccordions] = useState<{
@@ -224,18 +227,12 @@ export default function Home() {
     void fetchUserStats();
   }, [user?.id]);
 
-  // Parâmetros de URL para redirecionamento direto de aba ou post
+    // Sincronizar abertura do acordeão de exploração de ligas via URL
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab");
-      if (tabParam === "feed" || params.has("post")) {
-        setLeagueTab("feed");
-      } else if (tabParam === "standings" || tabParam === "ranking") {
-        setLeagueTab("standings");
-      } else if (tabParam === "members" || tabParam === "jogadores") {
-        setLeagueTab("members");
-      }
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("explore") === "1") {
+      setOpenAccordions((prev) => ({ ...prev, explore: true }));
     }
   }, []);
 
