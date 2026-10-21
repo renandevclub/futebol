@@ -31,10 +31,9 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 import { subscribeToTables } from "@/lib/realtime";
+import dynamic from "next/dynamic";
 import { MatchCountdown } from "@/components/MatchCountdown";
-import { ScratchCardModal, TEAM_COLORS } from "@/components/ScratchCardModal";
-import { PixPaymentModal } from "@/components/PixPaymentModal";
-import { ChampionModal } from "@/components/ChampionModal";
+import { TEAM_COLORS } from "@/constants/teamColors";
 import {
   getMatchChampionData,
   MatchChampionResult,
@@ -42,16 +41,40 @@ import {
 import { createNotification } from "@/lib/notifications";
 import { motion } from "framer-motion";
 import { useLeague } from "@/context/LeagueContext";
-import { LeagueCard } from "@/components/LeagueCard";
-import { LeagueSelector } from "@/components/LeagueSelector";
-import { CreateLeagueModal } from "@/components/CreateLeagueModal";
-import { EditLeagueModal } from "@/components/EditLeagueModal";
-import { BlockedLeagueModal } from "@/components/BlockedLeagueModal";
-import { JoinLeaguePasswordModal } from "@/components/JoinLeaguePasswordModal";
-import {
-  ImageLightboxModal,
-  LightboxPreviewData,
-} from "@/components/ImageLightboxModal";
+import type { LightboxPreviewData } from "@/components/ImageLightboxModal";
+
+const ScratchCardModal = dynamic(
+  () => import("@/components/ScratchCardModal").then((m) => m.ScratchCardModal),
+  { ssr: false }
+);
+const PixPaymentModal = dynamic(
+  () => import("@/components/PixPaymentModal").then((m) => m.PixPaymentModal),
+  { ssr: false }
+);
+const ChampionModal = dynamic(
+  () => import("@/components/ChampionModal").then((m) => m.ChampionModal),
+  { ssr: false }
+);
+const CreateLeagueModal = dynamic(
+  () => import("@/components/CreateLeagueModal").then((m) => m.CreateLeagueModal),
+  { ssr: false }
+);
+const EditLeagueModal = dynamic(
+  () => import("@/components/EditLeagueModal").then((m) => m.EditLeagueModal),
+  { ssr: false }
+);
+const BlockedLeagueModal = dynamic(
+  () => import("@/components/BlockedLeagueModal").then((m) => m.BlockedLeagueModal),
+  { ssr: false }
+);
+const JoinLeaguePasswordModal = dynamic(
+  () => import("@/components/JoinLeaguePasswordModal").then((m) => m.JoinLeaguePasswordModal),
+  { ssr: false }
+);
+const ImageLightboxModal = dynamic(
+  () => import("@/components/ImageLightboxModal").then((m) => m.ImageLightboxModal),
+  { ssr: false }
+);
 import { League } from "@/types/database";
 
 interface MatchListSectionProps {
@@ -1263,62 +1286,74 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
           )}
 
           {/* MODAL DO TIME CAMPEÃO */}
-          <ChampionModal
-            isOpen={isChampionOpen}
-            onClose={() => {
-              setIsChampionOpen(false);
-              setChampionData(null);
-            }}
-            championData={championData}
-            loading={championLoading}
-          />
+          {isChampionOpen && (
+            <ChampionModal
+              isOpen={isChampionOpen}
+              onClose={() => {
+                setIsChampionOpen(false);
+                setChampionData(null);
+              }}
+              championData={championData}
+              loading={championLoading}
+            />
+          )}
         </div>
 
       {/* MODAIS DE GESTÃO DE LIGAS */}
-      <CreateLeagueModal
-        isOpen={isCreateLeagueOpen}
-        onClose={() => setIsCreateLeagueOpen(false)}
-        onLeagueCreated={(newLeagueId) => {
-          selectLeague(newLeagueId);
-          setIsCreateLeagueOpen(false);
-        }}
-      />
+      {isCreateLeagueOpen && (
+        <CreateLeagueModal
+          isOpen={isCreateLeagueOpen}
+          onClose={() => setIsCreateLeagueOpen(false)}
+          onLeagueCreated={(newLeagueId) => {
+            selectLeague(newLeagueId);
+            setIsCreateLeagueOpen(false);
+          }}
+        />
+      )}
 
-      <EditLeagueModal
-        isOpen={isEditLeagueOpen}
-        onClose={() => {
-          setIsEditLeagueOpen(false);
-          setLeagueToEdit(null);
-        }}
-        league={leagueToEdit}
-      />
+      {isEditLeagueOpen && (
+        <EditLeagueModal
+          isOpen={isEditLeagueOpen}
+          onClose={() => {
+            setIsEditLeagueOpen(false);
+            setLeagueToEdit(null);
+          }}
+          league={leagueToEdit}
+        />
+      )}
 
-      <BlockedLeagueModal
-        isOpen={!!blockedLeagueToView}
-        onClose={() => setBlockedLeagueToView(null)}
-        league={blockedLeagueToView}
-      />
+      {!!blockedLeagueToView && (
+        <BlockedLeagueModal
+          isOpen={!!blockedLeagueToView}
+          onClose={() => setBlockedLeagueToView(null)}
+          league={blockedLeagueToView}
+        />
+      )}
 
-      <JoinLeaguePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => {
-          setIsPasswordModalOpen(false);
-          setLeagueToEnterWithPassword(null);
-        }}
-        league={leagueToEnterWithPassword}
-        onPreviewLogo={handlePreviewLeagueLogo}
-        onSuccess={(leagueId) => {
-          selectLeague(leagueId);
-          setIsPasswordModalOpen(false);
-          setLeagueToEnterWithPassword(null);
-        }}
-      />
+      {isPasswordModalOpen && (
+        <JoinLeaguePasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => {
+            setIsPasswordModalOpen(false);
+            setLeagueToEnterWithPassword(null);
+          }}
+          league={leagueToEnterWithPassword}
+          onPreviewLogo={handlePreviewLeagueLogo}
+          onSuccess={(leagueId) => {
+            selectLeague(leagueId);
+            setIsPasswordModalOpen(false);
+            setLeagueToEnterWithPassword(null);
+          }}
+        />
+      )}
 
       {/* Modal Lightbox para visualização de Foto de Perfil de Ligas */}
-      <ImageLightboxModal
-        data={leagueLightboxData}
-        onClose={() => setLeagueLightboxData(null)}
-      />
+      {leagueLightboxData && (
+        <ImageLightboxModal
+          data={leagueLightboxData}
+          onClose={() => setLeagueLightboxData(null)}
+        />
+      )}
     </div>
   );
 };

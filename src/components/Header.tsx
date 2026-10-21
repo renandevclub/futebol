@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import React, { useState, useEffect, useId, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -29,8 +30,15 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { NotificationCenterModal } from "@/components/NotificationCenterModal";
-import { MyWalletModal } from "@/components/MyWalletModal";
+import dynamic from "next/dynamic";
+const NotificationCenterModal = dynamic(
+  () => import("@/components/NotificationCenterModal").then((m) => m.NotificationCenterModal),
+  { ssr: false },
+);
+const MyWalletModal = dynamic(
+  () => import("@/components/MyWalletModal").then((m) => m.MyWalletModal),
+  { ssr: false },
+);
 import { getUnreadNotificationCount } from "@/lib/notifications";
 import { subscribeToTables } from "@/lib/realtime";
 import { supabase } from "@/lib/supabase";
@@ -163,9 +171,12 @@ export const Header: React.FC<HeaderProps> = ({
               href="/"
               className="flex items-center gap-2 sm:gap-3 group shrink-0"
             >
-              <img
+              <Image
                 src="/logo.png"
                 alt="F&V Sports"
+                width={52}
+                height={52}
+                priority
                 className="w-10 h-10 sm:w-13 sm:h-13 object-contain group-hover:scale-105 transition-transform duration-300 shrink-0 drop-shadow-sm"
               />
               <div className="min-w-0">
@@ -522,9 +533,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto overscroll-contain space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logo.png"
                   alt="Logo"
+                  width={36}
+                  height={36}
                   className="w-9 h-9 object-contain"
                 />
                 <span id={mobileMenuTitleId} className="font-black text-sm text-slate-900 dark:text-white">
@@ -800,17 +813,21 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      <NotificationCenterModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
-        userId={user?.id}
-        onNotificationRead={fetchUnread}
-      />
+      {isNotificationModalOpen && (
+        <NotificationCenterModal
+          isOpen={isNotificationModalOpen}
+          onClose={() => setIsNotificationModalOpen(false)}
+          userId={user?.id}
+          onNotificationRead={fetchUnread}
+        />
+      )}
 
-      <MyWalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-      />
+      {isWalletModalOpen && (
+        <MyWalletModal
+          isOpen={isWalletModalOpen}
+          onClose={() => setIsWalletModalOpen(false)}
+        />
+      )}
     </>
   );
 };

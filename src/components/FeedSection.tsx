@@ -5,12 +5,31 @@ import { Post, League } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useLeague } from '@/context/LeagueContext';
+import dynamic from 'next/dynamic';
 import { ReactionPicker } from '@/components/ReactionPicker';
-import { CommentSection } from '@/components/CommentSection';
-import { ShareModal } from '@/components/ShareModal';
-import { GalleryModal, GalleryMediaItem } from '@/components/GalleryModal';
-import { CreatePostModal } from '@/components/CreatePostModal';
-import { ImageLightboxModal, LightboxPreviewData } from '@/components/ImageLightboxModal';
+import type { GalleryMediaItem } from '@/components/GalleryModal';
+import type { LightboxPreviewData } from '@/components/ImageLightboxModal';
+
+const CommentSection = dynamic(
+  () => import('@/components/CommentSection').then((m) => m.CommentSection),
+  { ssr: false }
+);
+const ShareModal = dynamic(
+  () => import('@/components/ShareModal').then((m) => m.ShareModal),
+  { ssr: false }
+);
+const GalleryModal = dynamic(
+  () => import('@/components/GalleryModal').then((m) => m.GalleryModal),
+  { ssr: false }
+);
+const CreatePostModal = dynamic(
+  () => import('@/components/CreatePostModal').then((m) => m.CreatePostModal),
+  { ssr: false }
+);
+const ImageLightboxModal = dynamic(
+  () => import('@/components/ImageLightboxModal').then((m) => m.ImageLightboxModal),
+  { ssr: false }
+);
 import { 
   MessageSquare, 
   Trash2, 
@@ -592,12 +611,14 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
         />
       )}
 
-      <GalleryModal
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        items={galleryItems}
-        initialIndex={galleryIndex}
-      />
+      {isGalleryOpen && (
+        <GalleryModal
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          items={galleryItems}
+          initialIndex={galleryIndex}
+        />
+      )}
 
       {editingPost && (
         <CreatePostModal
@@ -614,10 +635,12 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
       )}
 
       {/* Lightbox para Visualização de Foto de Perfil */}
-      <ImageLightboxModal
-        data={lightboxData}
-        onClose={closeImagePreview}
-      />
+      {lightboxData && (
+        <ImageLightboxModal
+          data={lightboxData}
+          onClose={closeImagePreview}
+        />
+      )}
     </div>
   );
 };

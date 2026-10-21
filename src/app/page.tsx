@@ -2,13 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
-import { FeedSection } from "@/components/FeedSection";
-import { MatchListSection } from "@/components/MatchListSection";
-import { StandingsTable } from "@/components/StandingsTable";
-import { LeagueIndividualRankings } from "@/components/LeagueIndividualRankings";
-import { TournamentListSection } from "@/components/tournaments/TournamentListSection";
-import { LeagueCard } from "@/components/LeagueCard";
-import { LeagueSelector } from "@/components/LeagueSelector";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import type { LightboxPreviewData } from "@/components/ImageLightboxModal";
 import dynamic from "next/dynamic";
@@ -84,6 +77,34 @@ const JoinLeaguePasswordModal = dynamic(
 );
 const ImageLightboxModal = dynamic(
   () => import("@/components/ImageLightboxModal").then((module) => module.ImageLightboxModal),
+  { ssr: false },
+);
+const FeedSection = dynamic(
+  () => import("@/components/FeedSection").then((m) => m.FeedSection),
+  { ssr: false },
+);
+const MatchListSection = dynamic(
+  () => import("@/components/MatchListSection").then((m) => m.MatchListSection),
+  { ssr: false },
+);
+const StandingsTable = dynamic(
+  () => import("@/components/StandingsTable").then((m) => m.StandingsTable),
+  { ssr: false },
+);
+const LeagueIndividualRankings = dynamic(
+  () => import("@/components/LeagueIndividualRankings").then((m) => m.LeagueIndividualRankings),
+  { ssr: false },
+);
+const TournamentListSection = dynamic(
+  () => import("@/components/tournaments/TournamentListSection").then((m) => m.TournamentListSection),
+  { ssr: false },
+);
+const LeagueCard = dynamic(
+  () => import("@/components/LeagueCard").then((m) => m.LeagueCard),
+  { ssr: false },
+);
+const LeagueSelector = dynamic(
+  () => import("@/components/LeagueSelector").then((m) => m.LeagueSelector),
   { ssr: false },
 );
 

@@ -14,8 +14,15 @@ import {
   LogIn,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MyWalletModal } from "@/components/MyWalletModal";
-import { LoginModal } from "@/components/LoginModal";
+import dynamic from "next/dynamic";
+const MyWalletModal = dynamic(
+  () => import("@/components/MyWalletModal").then((m) => m.MyWalletModal),
+  { ssr: false },
+);
+const LoginModal = dynamic(
+  () => import("@/components/LoginModal").then((m) => m.LoginModal),
+  { ssr: false },
+);
 import { getUnreadNotificationCount } from "@/lib/notifications";
 import { getLeagueWallet } from "@/lib/financeHelper";
 import { subscribeToTables } from "@/lib/realtime";
@@ -381,18 +388,22 @@ export const BottomNavBar: React.FC = () => {
       </nav>
 
       {/* Modais acionados diretamente pelos atalhos da barra inferior */}
-      <MyWalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => {
-          setIsWalletModalOpen(false);
-          void loadWalletBalance();
-        }}
-      />
+      {isWalletModalOpen && (
+        <MyWalletModal
+          isOpen={isWalletModalOpen}
+          onClose={() => {
+            setIsWalletModalOpen(false);
+            void loadWalletBalance();
+          }}
+        />
+      )}
 
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-      />
+      {isLoginModalOpen && (
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+        />
+      )}
     </>
   );
 };
