@@ -208,22 +208,28 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
     }
   };
 
-  const isMatchEnded = (match: Match) => {
-    if (match.status === "finalizada") return true;
-    if (match.status === "cancelada") return false;
-    if (!match.data || !match.horario) return false;
+  const getMatchTimestamp = (match: Match): number => {
+    if (!match.data) return 0;
     const [year, month, day] = match.data.split("-").map(Number);
-    const [hours, minutes] = match.horario.split(":").map(Number);
-    const matchDate = new Date(
+    const [hours, minutes] = (match.horario || "00:00").split(":").map(Number);
+    return new Date(
       year,
-      month - 1,
-      day,
+      (month || 1) - 1,
+      day || 1,
       hours || 0,
       minutes || 0,
       0,
-    );
+    ).getTime();
+  };
+
+  const isMatchEnded = (match: Match) => {
+    if (match.status === "finalizada") return true;
+    if (match.status === "cancelada") return false;
+    if (match.status === "em_andamento") return false;
+    if (!match.data || !match.horario) return false;
+    const matchTime = getMatchTimestamp(match);
     const durationMs = 2 * 60 * 60 * 1000;
-    return Date.now() - matchDate.getTime() >= durationMs;
+    return Date.now() - matchTime >= durationMs;
   };
 
   const fetchMatches = async (showLoader = false) => {
@@ -234,8 +240,8 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
       let query = supabase
         .from("matches")
         .select("*")
-        .order("data", { ascending: true })
-        .order("horario", { ascending: true });
+        .order("data", { ascending: false })
+        .order("horario", { ascending: false });
 
       if (currentLeague?.id) {
         query = query.eq("organization_id", currentLeague.id);
@@ -255,10 +261,14 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
         const matchIds = matchesData.map((m) => m.id);
 
         // Buscar apenas campos essenciais de participantes para a listagem
-        const { data: participantsData } = await supabase
+        const { data: participantsData, error: partsErr } = await supabase
           .from("match_participants")
-          .select("id, match_id, user_id, team, paid, status, position, created_at")
+          .select("id, match_id, user_id, team, paid, payment_status, guest_name, created_at")
           .in("match_id", matchIds);
+
+        if (partsErr) {
+          console.error("Erro ao buscar participantes das partidas:", partsErr);
+        }
 
         const counts: Record<string, number> = {};
         const userJoined: Record<string, boolean> = {};
@@ -307,9 +317,17 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
       debouncedFetch,
     );
 
+    const handleFocus = () => {
+      void fetchMatches(false);
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
     return () => {
       if (timer) clearTimeout(timer);
       unsub();
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [user?.id, currentLeague?.id]);
 
@@ -623,19 +641,64 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
     }
   };
 
-  // Partidas filtradas pela Liga ativa
-  const leagueMatches = currentLeague
-    ? matches.filter((m) => m.organization_id === currentLeague.id)
-    : matches;
+  // Partidas filtradas pela Liga ativa e ordenadas com partidas agendadas/recentes no topo
+  const leagueMatches = useMemo(() => {
+    return currentLeague
+      ? matches.filter((m) => m.organization_id === currentLeague.id)
+      : matches;
+  }, [matches, currentLeague]);
 
-  const filteredMatches = leagueMatches.filter((m) => {
-    const query = searchTerm.toLowerCase();
-    return (
-      m.titulo.toLowerCase().includes(query) ||
-      m.local.toLowerCase().includes(query) ||
-      (m.endereco && m.endereco.toLowerCase().includes(query))
-    );
-  });
+  const { activeMatches, endedMatches, filteredMatches } = useMemo(() => {
+    const query = searchTerm.toLowerCase().trim();
+    const searched = leagueMatches.filter((m) => {
+      if (!query) return true;
+      return (
+        m.titulo.toLowerCase().includes(query) ||
+        m.local.toLowerCase().includes(query) ||
+        (m.endereco && m.endereco.toLowerCase().includes(query))
+      );
+    });
+
+    const active: Match[] = [];
+    const ended: Match[] = [];
+
+    searched.forEach((m) => {
+      if (isMatchEnded(m)) {
+        ended.push(m);
+      } else {
+        active.push(m);
+      }
+    });
+
+    // 1) Partidas agendadas / recentes (não encerradas):
+    // As mais próximas de acontecer primeiro (cronológica da mais próxima para o futuro)
+    // Se mesma data/horário, a mais recentemente agendada/criada primeiro (created_at desc)
+    active.sort((a, b) => {
+      const timeA = getMatchTimestamp(a);
+      const timeB = getMatchTimestamp(b);
+      if (timeA !== timeB) return timeA - timeB;
+      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdB - createdA;
+    });
+
+    // 2) Partidas encerradas:
+    // A que encerrou mais recentemente primeiro (decrescente)
+    ended.sort((a, b) => {
+      const timeA = getMatchTimestamp(a);
+      const timeB = getMatchTimestamp(b);
+      if (timeA !== timeB) return timeB - timeA;
+      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdB - createdA;
+    });
+
+    return {
+      activeMatches: active,
+      endedMatches: ended,
+      filteredMatches: [...active, ...ended],
+    };
+  }, [leagueMatches, searchTerm]);
 
   const filteredLeagues = leagues.filter((lg) => {
     const query = leagueSearchTerm.toLowerCase();
@@ -761,56 +824,68 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                   /* ═══ CARD DE PARTIDA ENCERRADA ═══ */
                 }
                 if (isEnded) {
+                  const isFirstEnded = idx === activeMatches.length && activeMatches.length > 0;
                   return (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.1 }}
-                      transition={{
-                        duration: 0.35,
-                        delay: Math.min((idx % 4) * 0.06, 0.2),
-                        ease: "easeOut",
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      whileHover={{ scale: 1.01 }}
-                      onClick={() => onSelectMatch(match.id)}
-                      className="bg-white/95 dark:bg-[#0e1614] border-2 border-amber-500/30 dark:border-amber-500/25 hover:border-amber-500/60 rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl dark:shadow-black/40 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between space-y-4"
-                    >
-                      {/* Barra superior dourada */}
-                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
-
-                      <div className="space-y-3.5 pt-1">
-                        {/* Selo "Partida Encerrada" + Botão "Ver Time Campeão" */}
-                        <MatchCountdown
-                          match={match}
-                          onOpenChampion={() => handleOpenChampionModal(match)}
-                        />
-
-                        {/* Título da Partida */}
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-400 via-yellow-400 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.3)] shrink-0" />
-                          <h3 className="font-black text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors leading-tight tracking-tight truncate">
-                            {match.titulo}
-                          </h3>
+                    <React.Fragment key={match.id}>
+                      {isFirstEnded && (
+                        <div className="col-span-full pt-3 pb-1 flex items-center gap-3">
+                          <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                          <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/90 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-xs">
+                            <span>🏁</span>
+                            <span>Partidas Encerradas ({endedMatches.length})</span>
+                          </span>
+                          <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
                         </div>
+                      )}
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.1 }}
+                        transition={{
+                          duration: 0.35,
+                          delay: Math.min((idx % 4) * 0.06, 0.2),
+                          ease: "easeOut",
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => onSelectMatch(match.id)}
+                        className="bg-white/95 dark:bg-[#0e1614] border-2 border-amber-500/30 dark:border-amber-500/25 hover:border-amber-500/60 rounded-3xl p-5 sm:p-6 shadow-md hover:shadow-xl dark:shadow-black/40 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between space-y-4"
+                      >
+                        {/* Barra superior dourada */}
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
 
-                        {/* Informações da Partida Encerrada */}
-                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                          <div className="flex items-center gap-1.5 font-bold">
-                            <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{formattedDate}</span>
-                            <span>•</span>
-                            <span>{match.horario.substring(0, 5)}h</span>
+                        <div className="space-y-3.5 pt-1">
+                          {/* Selo "Partida Encerrada" + Botão "Ver Time Campeão" */}
+                          <MatchCountdown
+                            match={match}
+                            onOpenChampion={() => handleOpenChampionModal(match)}
+                          />
+
+                          {/* Título da Partida */}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-400 via-yellow-400 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.3)] shrink-0" />
+                            <h3 className="font-black text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors leading-tight tracking-tight truncate">
+                              {match.titulo}
+                            </h3>
                           </div>
 
-                          <div className="flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
-                            <span>Ver detalhes</span>
-                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          {/* Informações da Partida Encerrada */}
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                              <span>{formattedDate}</span>
+                              <span>•</span>
+                              <span>{match.horario.substring(0, 5)}h</span>
+                            </div>
+
+                            <div className="flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                              <span>Ver detalhes</span>
+                              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
+                    </React.Fragment>
                   );
                 }
 

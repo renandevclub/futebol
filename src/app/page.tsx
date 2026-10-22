@@ -652,6 +652,20 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          {/* FOOTER EXCLUSIVO DA PÁGINA PÚBLICA */}
+          <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center space-y-1 mt-auto">
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5">
+              <span>🏆</span>
+              <span className="font-black">F&V Sports</span>
+            </p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto">
+              Partidas de futebol e vôlei com confirmação pelo WhatsApp, raspadinha de times, PIX e rankings.
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              © 2026 F&V Sports • Todos os direitos reservados
+            </p>
+          </footer>
         </div>
       )}
 
@@ -1507,20 +1521,6 @@ export default function Home() {
           </section>
         </main>
       )}
-
-      {/* FOOTER */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center space-y-1 mt-auto">
-        <p className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5">
-          <span>🏆</span>
-          <span className="font-black">F&V Sports</span>
-        </p>
-        <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto">
-          Partidas de futebol e vôlei com confirmação pelo WhatsApp, raspadinha de times, PIX e rankings.
-        </p>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-          © 2026 F&V Sports • Todos os direitos reservados
-        </p>
-      </footer>
 
       {/* MODAIS GLOBAIS */}
       {isLoginOpen && (
