@@ -30,6 +30,10 @@ const ImageLightboxModal = dynamic(
   () => import('@/components/ImageLightboxModal').then((m) => m.ImageLightboxModal),
   { ssr: false }
 );
+const StoriesBar = dynamic(
+  () => import('@/components/stories/StoriesBar').then((m) => m.StoriesBar),
+  { ssr: false }
+);
 import { 
   MessageSquare, 
   Trash2, 
@@ -290,6 +294,13 @@ export const FeedSection: React.FC<FeedSectionProps> = ({
   // CASO 3: USUÁRIO É MEMBRO DA LIGA -> RENDERIZA FEED EXCLUSIVO
   return (
     <div className="space-y-6">
+      {/* 📸 ÁREA DE STORIES (COMPACTO INSTAGRAM / FACEBOOK) */}
+      <StoriesBar
+        leagueId={effectiveLeagueId}
+        leagueName={effectiveLeagueName}
+        onOpenLogin={onOpenLogin}
+      />
+
       {/* Indicador Superior do Feed da Liga */}
       <div className="flex items-center justify-between px-2 py-1">
         <div className="flex items-center gap-2">
