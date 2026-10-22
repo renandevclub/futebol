@@ -229,11 +229,19 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
   const fetchMatches = async (showLoader = false) => {
     try {
       if (showLoader) setLoading(true);
-      const { data: matchesData, error } = await supabase
+
+      // Filtrar pela liga atual quando disponível para evitar buscar TODAS as partidas
+      let query = supabase
         .from("matches")
         .select("*")
         .order("data", { ascending: true })
         .order("horario", { ascending: true });
+
+      if (currentLeague?.id) {
+        query = query.eq("organization_id", currentLeague.id);
+      }
+
+      const { data: matchesData, error } = await query;
 
       if (error) {
         console.error("Erro ao buscar partidas:", error);
@@ -246,10 +254,10 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
       if (matchesData && matchesData.length > 0) {
         const matchIds = matchesData.map((m) => m.id);
 
-        // Buscar dados completos de participantes por partida
+        // Buscar apenas campos essenciais de participantes para a listagem
         const { data: participantsData } = await supabase
           .from("match_participants")
-          .select("*, user:user_id(*)")
+          .select("id, match_id, user_id, team, paid, status, position, created_at")
           .in("match_id", matchIds);
 
         const counts: Record<string, number> = {};
@@ -262,7 +270,7 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
           if (user && p.user_id === user.id) {
             userJoined[p.match_id] = true;
             userPaid[p.match_id] = !!p.paid;
-            userPartsMap[p.match_id] = p as MatchParticipant;
+            userPartsMap[p.match_id] = p as unknown as MatchParticipant;
           }
         });
 
@@ -286,12 +294,24 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
   useEffect(() => {
     void fetchMatches(true);
 
-    return subscribeToTables(
+    // Debounce no realtime para evitar refetches em cascata
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedFetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchMatches(), 400);
+    };
+
+    const unsub = subscribeToTables(
       "public_matches",
       [{ table: "matches" }, { table: "match_participants" }],
-      () => fetchMatches(),
+      debouncedFetch,
     );
-  }, [user?.id]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsub();
+    };
+  }, [user?.id, currentLeague?.id]);
 
   // Callback do ScratchCardModal: salvar time e histórico
   const handleScratchAssignTeam = async (targetTeam: number) => {

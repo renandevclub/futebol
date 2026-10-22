@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import type { LightboxPreviewData } from "@/components/ImageLightboxModal";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
   Calendar,
   MessageSquare,
@@ -166,7 +167,8 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Só busca stats quando a dashboard pessoal está visível (sem liga selecionada)
+    if (!user?.id || currentLeague) return;
     const fetchUserStats = async () => {
       try {
         const [
@@ -176,15 +178,15 @@ export default function Home() {
         ] = await Promise.all([
           supabase
             .from("match_participants")
-            .select("id, match_id, match:match_id(id, organization_id, sport_type)")
+            .select("match:match_id(sport_type)")
             .eq("user_id", user.id),
           supabase
             .from("match_game_goals")
-            .select("id, match_id, point_type, card_type, match:match_id(id, organization_id, sport_type)")
+            .select("match:match_id(sport_type)")
             .eq("player_id", user.id),
           supabase
             .from("timeline_events")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("user_id", user.id)
             .eq("event_type", "became_mvp"),
         ]);
@@ -225,7 +227,7 @@ export default function Home() {
     };
 
     void fetchUserStats();
-  }, [user?.id]);
+  }, [user?.id, currentLeague]);
 
     // Sincronizar abertura do acordeão de exploração de ligas via URL
   useEffect(() => {
@@ -667,9 +669,13 @@ export default function Home() {
                 {/* Avatar Maior e Destacado */}
                 <div className="relative shrink-0">
                   {user.avatar_url ? (
-                    <img
+                    <Image
                       src={user.avatar_url}
                       alt={user.nome || "Atleta"}
+                      width={80}
+                      height={80}
+                      priority
+                      unoptimized={user.avatar_url.startsWith('blob:') || user.avatar_url.startsWith('data:')}
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl object-cover border-2 border-emerald-500/50 ring-4 ring-emerald-500/15 shadow-md"
                     />
                   ) : (
@@ -1442,9 +1448,12 @@ export default function Home() {
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             {athlete?.avatar_url ? (
-                              <img
+                              <Image
                                 src={athlete.avatar_url}
-                                alt={athlete.nome}
+                                alt={athlete.nome || "Atleta"}
+                                width={40}
+                                height={40}
+                                unoptimized={athlete.avatar_url.startsWith('blob:') || athlete.avatar_url.startsWith('data:')}
                                 className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                               />
                             ) : (
@@ -1505,10 +1514,10 @@ export default function Home() {
           <span>🏆</span>
           <span className="font-black">F&V Sports</span>
         </p>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium max-w-sm mx-auto">
+        <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto">
           Partidas de futebol e vôlei com confirmação pelo WhatsApp, raspadinha de times, PIX e rankings.
         </p>
-        <p className="text-[10px] text-slate-300 dark:text-slate-600">
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">
           © 2026 F&V Sports • Todos os direitos reservados
         </p>
       </footer>

@@ -95,10 +95,28 @@ export async function getNotifications(
   }
 }
 
+// Cache em memória de curta duração (5s) para evitar chamadas duplicadas simultâneas (Header + BottomNav)
+const unreadCountCache = new Map<string, { count: number; timestamp: number }>();
+const CACHE_TTL_MS = 5000;
+
+export function invalidateNotificationCountCache(userId?: string) {
+  if (userId) {
+    unreadCountCache.delete(userId);
+  } else {
+    unreadCountCache.clear();
+  }
+}
+
 /**
- * Retorna a quantidade de notificações não lidas.
+ * Retorna a quantidade de notificações não lidas com cache de curta duração.
  */
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  const cached = unreadCountCache.get(userId);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return cached.count;
+  }
+
   try {
     const { count, error } = await supabase
       .from('notifications')
@@ -107,7 +125,9 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
       .eq('read', false);
 
     if (error) return 0;
-    return count || 0;
+    const finalCount = count || 0;
+    unreadCountCache.set(userId, { count: finalCount, timestamp: now });
+    return finalCount;
   } catch {
     return 0;
   }
@@ -179,6 +199,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<bo
       .update({ read: true, read_at: new Date().toISOString() })
       .eq('id', notificationId);
 
+    if (!error) invalidateNotificationCountCache();
     return !error;
   } catch {
     return false;
@@ -196,6 +217,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<boolea
       .eq('user_id', userId)
       .eq('read', false);
 
+    if (!error) invalidateNotificationCountCache(userId);
     return !error;
   } catch {
     return false;
@@ -218,6 +240,7 @@ export async function markAllNotificationsAsReadByCategory(
       .eq('read', false)
       .eq('category', category);
 
+    if (!error) invalidateNotificationCountCache(userId);
     return !error;
   } catch {
     return false;

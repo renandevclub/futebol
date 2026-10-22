@@ -58,16 +58,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const activeProfileFetchRef = React.useRef<Map<string, Promise<Profile | null>>>(new Map());
 
   /**
    * Busca e sincroniza o perfil associado ao usuário do Supabase Auth
    */
   const fetchProfileForUser = useCallback(async (user: User): Promise<Profile | null> => {
-    try {
-      let resolvedProfile: Profile | null = null;
+    // Se já existe uma requisição em andamento para este usuário, reutiliza a mesma promessa
+    const existingPromise = activeProfileFetchRef.current.get(user.id);
+    if (existingPromise) {
+      return existingPromise;
+    }
 
-      // 1. Tenta buscar pelo auth_id (vínculo oficial)
-      const { data: profileByAuthId, error: errAuthId } = await supabase
+    const fetchPromise = (async (): Promise<Profile | null> => {
+      try {
+        let resolvedProfile: Profile | null = null;
+
+        // 1. Tenta buscar pelo auth_id (vínculo oficial)
+        const { data: profileByAuthId, error: errAuthId } = await supabase
         .from('profiles')
         .select('*')
         .eq('auth_id', user.id)
@@ -130,7 +138,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('Erro ao carregar perfil do usuário:', err);
       return null;
+    } finally {
+      activeProfileFetchRef.current.delete(user.id);
     }
+    })();
+
+    activeProfileFetchRef.current.set(user.id, fetchPromise);
+    return fetchPromise;
   }, []);
 
   /**

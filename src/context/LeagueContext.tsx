@@ -105,38 +105,42 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Carregar lista de Ligas com perfis de administradores e contagem de partidas
   const fetchLeagues = useCallback(async () => {
     try {
-      const { data: leaguesData, error: leaguesError } = await supabase
+      // Buscar tudo em paralelo: ligas, admins, e membros do usuário
+      const leaguesPromise = supabase
         .from('organizations')
         .select(`
           *,
-          owner:owner_id(*)
+          owner:owner_id(*),
+          matches_count:matches(count)
         `)
         .order('created_at', { ascending: true });
+
+      const adminMembersPromise = supabase
+        .from('organization_members')
+        .select(`
+          organization_id,
+          role,
+          user:user_id(id, nome, apelido, avatar_url, whatsapp)
+        `)
+        .in('role', ['owner', 'admin']);
+
+      const userMembersPromise = user?.id
+        ? supabase
+            .from('organization_members')
+            .select('organization_id, role')
+            .eq('user_id', user.id)
+        : Promise.resolve({ data: null });
+
+      const [
+        { data: leaguesData, error: leaguesError },
+        { data: adminMembersData },
+        { data: membersData },
+      ] = await Promise.all([leaguesPromise, adminMembersPromise, userMembersPromise]);
 
       if (leaguesError) {
         console.error('Erro ao buscar ligas:', leaguesError);
         return;
       }
-
-      // Buscar contagem de partidas e administradores vinculados por liga em paralelo
-      const [{ data: matchesData }, { data: adminMembersData }] = await Promise.all([
-        supabase.from('matches').select('id, organization_id, status'),
-        supabase
-          .from('organization_members')
-          .select(`
-            organization_id,
-            role,
-            user:user_id(*)
-          `)
-          .in('role', ['owner', 'admin']),
-      ]);
-
-      const matchCountMap: Record<string, number> = {};
-      matchesData?.forEach((m) => {
-        if (m.organization_id) {
-          matchCountMap[m.organization_id] = (matchCountMap[m.organization_id] || 0) + 1;
-        }
-      });
 
       // Mapear administradores por organização
       const adminsByOrgMap: Record<string, any[]> = {};
@@ -152,38 +156,36 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      const formattedLeagues: League[] = (leaguesData || []).map((org) => {
+      const formattedLeagues: League[] = (leaguesData || []).map((org: any) => {
         const orgAdmins = [...(adminsByOrgMap[org.id] || [])];
         // Garantir que se o criador/owner original existir, ele esteja presente na lista de administradores
         if (org.owner && !orgAdmins.some((u: any) => u.id === org.owner.id)) {
           orgAdmins.unshift(org.owner);
         }
 
+        // Extrair contagem de partidas do supabase aggregate count
+        const matchCount = Array.isArray(org.matches_count)
+          ? org.matches_count[0]?.count ?? 0
+          : 0;
+
         return {
           ...org,
+          matches_count: matchCount,
           has_password: Boolean(org.access_password && org.access_password.trim().length > 0),
-          matches_count: matchCountMap[org.id] || 0,
           admins: orgAdmins.length > 0 ? orgAdmins : org.owner ? [org.owner] : [],
         };
       });
 
       setLeagues(formattedLeagues);
 
-      // Buscar as ligas em que o usuário atual é membro ou administrador
-      if (user?.id) {
-        const { data: membersData } = await supabase
-          .from('organization_members')
-          .select('organization_id, role')
-          .eq('user_id', user.id);
-
-        if (membersData) {
-          setUserMemberLeagueIds(membersData.map((m) => m.organization_id));
-          setUserAdminLeagueIds(
-            membersData
-              .filter((m) => m.role === 'owner' || m.role === 'admin')
-              .map((m) => m.organization_id)
-          );
-        }
+      // Processar membros do usuário (já buscados em paralelo acima)
+      if (membersData) {
+        setUserMemberLeagueIds(membersData.map((m: any) => m.organization_id));
+        setUserAdminLeagueIds(
+          membersData
+            .filter((m: any) => m.role === 'owner' || m.role === 'admin')
+            .map((m: any) => m.organization_id)
+        );
       }
 
       // Se há um selectedLeagueId salvo no localStorage ou estado, verificar se ainda existe
@@ -207,14 +209,26 @@ export const LeagueProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     fetchLeagues();
 
+    // Debounce no Realtime para evitar cascata de refetches quando múltiplos eventos chegam juntos
+    let realtimeTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedFetch = () => {
+      if (realtimeTimer) clearTimeout(realtimeTimer);
+      realtimeTimer = setTimeout(() => {
+        void fetchLeagues();
+      }, 500);
+    };
+
     // Inscrição Realtime para manter Ligas, Membros e Partidas atualizadas
-    return subscribeToTables(
+    const unsub = subscribeToTables(
       'leagues_realtime_sync',
       [{ table: 'organizations' }, { table: 'organization_members' }, { table: 'matches' }],
-      () => {
-        void fetchLeagues();
-      }
+      debouncedFetch,
     );
+
+    return () => {
+      if (realtimeTimer) clearTimeout(realtimeTimer);
+      unsub();
+    };
   }, [fetchLeagues]);
 
   // Função para selecionar a Liga ativa
