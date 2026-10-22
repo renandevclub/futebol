@@ -345,21 +345,25 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "100%", opacity: 0 }}
           transition={{ type: "spring", damping: 28, stiffness: 320 }}
-          drag="y"
-          dragConstraints={{ top: 0 }}
-          dragElastic={0.15}
-          onDragEnd={handleDragEnd}
-          className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y p-5 sm:p-6 pb-safe shadow-2xl space-y-5"
+          className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md max-h-[90dvh] sm:max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
         >
-          {/* Alça visual de arraste no mobile */}
-          <div className="pt-0.5 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          {/* Alça de arraste — somente esta área ativa o drag no mobile */}
+          <motion.div
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.15}
+            onDragEnd={handleDragEnd}
+            className="pt-3 pb-2 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          >
             <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-          </div>
+          </motion.div>
 
+          {/* Container scrollável do conteúdo */}
+          <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y p-5 sm:p-6 pt-2 sm:pt-6 pb-safe space-y-5 relative">
           {/* Botão Fechar com touch target confortável */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="absolute top-0 right-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10"
             aria-label="Fechar modal PIX"
           >
             <X className="w-5 h-5" />
@@ -727,6 +731,7 @@ export const PixPaymentModal: React.FC<PixPaymentModalProps> = ({
               </div>
             </div>
           )}
+          </div>{/* Fecha container scrollável */}
         </motion.div>
       </div>
     </AnimatePresence>
