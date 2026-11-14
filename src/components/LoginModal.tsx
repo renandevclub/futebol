@@ -16,12 +16,15 @@ import {
   MessageCircle,
   ShieldCheck,
   CheckCircle2,
-  Ticket,
   KeyRound,
   ShieldAlert,
 } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { formatPhoneDisplay, validatePhoneNumber, cleanPhoneNumber } from "@/lib/phoneUtils";
+import {
+  formatPhoneDisplay,
+  validatePhoneNumber,
+  cleanPhoneNumber,
+} from "@/lib/phoneUtils";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -29,7 +32,11 @@ interface LoginModalProps {
   initialMode?: "login" | "register";
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initialMode = "login" }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  initialMode = "login",
+}) => {
   const { login, signup, recoverPassword } = useAuth();
 
   const [mode, setMode] = useState<"login" | "register">(initialMode);
@@ -45,7 +52,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
   const [nome, setNome] = useState("");
   const [apelido, setApelido] = useState("");
   const [genero, setGenero] = useState<"masculino" | "feminino">("masculino");
-  const [inviteCode, setInviteCode] = useState("");
 
   // Campos Comuns
   const [phone, setPhone] = useState("");
@@ -77,7 +83,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     if (errorMessage) setErrorMessage(null);
   };
 
-  const handleRecoveryPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRecoveryPhoneChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const formatted = formatPhoneDisplay(e.target.value);
     setRecoveryPhone(formatted);
     if (recoveryError) setRecoveryError(null);
@@ -143,7 +151,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
       whatsapp: phone,
       password: password,
       genero: genero,
-      inviteCode: inviteCode.trim() || undefined,
     });
     setIsSubmitting(false);
 
@@ -176,12 +183,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     }
 
     if (recoveryPassword !== recoveryConfirmPassword) {
-      setRecoveryError("A confirmação de senha não confere com a nova senha digitada.");
+      setRecoveryError(
+        "A confirmação de senha não confere com a nova senha digitada.",
+      );
       return;
     }
 
     setIsRecoverySubmitting(true);
-    const result = await recoverPassword(recoveryPhone, cleanCode, recoveryPassword);
+    const result = await recoverPassword(
+      recoveryPhone,
+      cleanCode,
+      recoveryPassword,
+    );
     setIsRecoverySubmitting(false);
 
     if (result.success) {
@@ -194,7 +207,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
     }
   };
 
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) => {
     if (info.offset.y > 100 || info.velocity.y > 400) {
       onClose();
     }
@@ -218,40 +234,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
         dragConstraints={{ top: 0 }}
         dragElastic={0.15}
         onDragEnd={handleDragEnd}
-        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y pb-safe"
+        className="relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 max-h-[94dvh] sm:max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none overscroll-contain touch-pan-y pb-safe"
       >
         {/* Alça visual de arraste no mobile */}
-        <div className="pt-0.5 pb-2 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
-          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+        <div className="pt-0 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
         </div>
 
         {/* Botão Fechar com touch target confortável */}
         <motion.button
           whileTap={{ scale: 0.88 }}
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-10 h-10 rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           aria-label="Fechar janela de login"
         >
           <X className="w-5 h-5" />
         </motion.button>
 
         {/* Header com Logo em Destaque */}
-        <div className="text-center pt-1">
-          <div className="flex items-center justify-center mb-2">
+        <div className="text-center pt-0 sm:pt-1">
+          <div className="flex items-center justify-center mb-1.5">
             <img
               src="/logo.png"
               alt="F&V Sports Logo"
-              className="w-36 h-36 sm:w-40 sm:h-40 object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.45)] transition-transform hover:scale-105 duration-300"
+              className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
               onError={(e) => {
                 // Fallback visual se a logo demorar a carregar
                 (e.currentTarget as HTMLElement).style.display = "none";
               }}
             />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
             {mode === "login" ? "Acesse sua Conta" : "Crie sua Conta"}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {mode === "login"
               ? "Entre com seu telefone e senha para acessar suas partidas e ligas"
               : "Cadastre-se para participar dos jogos e acompanhar suas estatísticas"}
@@ -267,7 +283,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               setMode("login");
               setErrorMessage(null);
             }}
-            className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
               mode === "login"
                 ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -283,7 +299,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               setMode("register");
               setErrorMessage(null);
             }}
-            className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
               mode === "register"
                 ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -323,13 +339,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
 
         {/* Formulário de Login */}
         {mode === "login" ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Telefone (WhatsApp) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -338,14 +354,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                   placeholder="(91) 99999-9999"
                   value={phone}
                   onChange={handlePhoneChange}
-                  className="w-full pl-10 pr-3.5 py-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">
                   Senha <span className="text-red-500">*</span>
                 </label>
                 <button
@@ -357,7 +373,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                 </button>
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
@@ -368,12 +384,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                     setPassword(e.target.value);
                     if (errorMessage) setErrorMessage(null);
                   }}
-                  className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
+                  className="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
                   aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
                 >
                   {showPassword ? (
@@ -389,7 +405,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               whileTap={{ scale: 0.96 }}
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -406,13 +422,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
           </form>
         ) : (
           /* Formulário de Cadastro */
-          <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+          <form
+            onSubmit={handleRegisterSubmit}
+            className="space-y-2.5 sm:space-y-3"
+          >
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Nome Completo <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   required
@@ -422,14 +441,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                     setNome(e.target.value);
                     if (errorMessage) setErrorMessage(null);
                   }}
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Apelido (Opcional)
                 </label>
                 <input
@@ -437,19 +456,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                   placeholder="Ex: Carlinhos"
                   value={apelido}
                   onChange={(e) => setApelido(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Gênero <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                   <button
                     type="button"
                     onClick={() => setGenero("masculino")}
-                    className={`py-1.5 text-xs font-bold rounded-xl transition-all ${
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
                       genero === "masculino"
                         ? "bg-blue-500 text-white shadow-sm"
                         : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -460,7 +479,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                   <button
                     type="button"
                     onClick={() => setGenero("feminino")}
-                    className={`py-1.5 text-xs font-bold rounded-xl transition-all ${
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
                       genero === "feminino"
                         ? "bg-pink-500 text-white shadow-sm"
                         : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -473,11 +492,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Telefone (WhatsApp) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="tel"
                   inputMode="numeric"
@@ -486,50 +505,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                   placeholder="(91) 99999-9999"
                   value={phone}
                   onChange={handlePhoneChange}
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                 />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Se você já jogou partidas conosco, seu histórico será vinculado
-                automaticamente.
-              </p>
             </div>
 
-            {/* Campo Opcional de Convite */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Código de Convite <span className="text-slate-400 font-normal">(Opcional)</span>
-                </label>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                  Não obrigatório
-                </span>
-              </div>
-              <div className="relative">
-                <Ticket className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  placeholder="Ex: FV-9K3M7A (deixe em branco se não tiver)"
-                  value={inviteCode}
-                  onChange={(e) => {
-                    setInviteCode(e.target.value.toUpperCase());
-                    if (errorMessage) setErrorMessage(null);
-                  }}
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Possui convite do Super Administrador? Digite aqui para vincular sua origem.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Senha e Confirmar Senha lado a lado */}
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Criar Senha <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
@@ -540,12 +528,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                       setPassword(e.target.value);
                       if (errorMessage) setErrorMessage(null);
                     }}
-                    className="w-full pl-10 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
                     {showPassword ? (
                       <EyeOff className="w-3.5 h-3.5" />
@@ -557,11 +546,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Confirmar Senha <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
@@ -572,12 +561,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                       setConfirmPassword(e.target.value);
                       if (errorMessage) setErrorMessage(null);
                     }}
-                    className="w-full pl-10 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar confirmação de senha"
+                        : "Ver confirmação de senha"
+                    }
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="w-3.5 h-3.5" />
@@ -593,7 +587,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
               whileTap={{ scale: 0.96 }}
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-3 cursor-pointer"
+              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -683,7 +677,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                 <form onSubmit={handleRecoverySubmit} className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Telefone (WhatsApp) <span className="text-red-500">*</span>
+                      Telefone (WhatsApp){" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -701,7 +696,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Código de 6 Dígitos <span className="text-red-500">*</span>
+                      Código de 6 Dígitos{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -740,17 +736,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                       />
                       <button
                         type="button"
-                        onClick={() => setShowRecoveryPassword(!showRecoveryPassword)}
+                        onClick={() =>
+                          setShowRecoveryPassword(!showRecoveryPassword)
+                        }
                         className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
                       >
-                        {showRecoveryPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        {showRecoveryPassword ? (
+                          <EyeOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Confirmar Nova Senha <span className="text-red-500">*</span>
+                      Confirmar Nova Senha{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -759,7 +762,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                         required
                         placeholder="Repita a nova senha"
                         value={recoveryConfirmPassword}
-                        onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
+                        onChange={(e) =>
+                          setRecoveryConfirmPassword(e.target.value)
+                        }
                         className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                       />
                     </div>
@@ -788,7 +793,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                 /* Solicitar Código ao Administrador no WhatsApp */
                 <div className="space-y-3 text-center">
                   <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-left">
-                    Para garantir a segurança da sua conta, o código de recuperação é gerado individualmente pelo <strong>Super Administrador</strong>.
+                    Para garantir a segurança da sua conta, o código de
+                    recuperação é gerado individualmente pelo{" "}
+                    <strong>Super Administrador</strong>.
                   </p>
 
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 text-left space-y-1.5">
@@ -796,9 +803,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, initial
                       <ShieldCheck className="w-4 h-4 shrink-0" />
                       <span>Como funciona:</span>
                     </div>
-                    <p>1. Clique no botão abaixo para abrir a conversa oficial no WhatsApp.</p>
-                    <p>2. O Administrador confirmará seu cadastro e gerará um código de 6 dígitos.</p>
-                    <p>3. Volte nesta tela na aba &quot;Digitar Código&quot; e defina sua nova senha.</p>
+                    <p>
+                      1. Clique no botão abaixo para abrir a conversa oficial no
+                      WhatsApp.
+                    </p>
+                    <p>
+                      2. O Administrador confirmará seu cadastro e gerará um
+                      código de 6 dígitos.
+                    </p>
+                    <p>
+                      3. Volte nesta tela na aba &quot;Digitar Código&quot; e
+                      defina sua nova senha.
+                    </p>
                   </div>
 
                   <div className="space-y-2 pt-1">
