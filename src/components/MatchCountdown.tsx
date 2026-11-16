@@ -2,15 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { Match } from '@/types/database';
-import { Clock, CheckCircle2, AlertCircle, Flame, Zap, Sparkles } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, Flame, Zap, Sparkles, Table } from 'lucide-react';
 
 interface MatchCountdownProps {
   match: Match;
   className?: string;
   onOpenChampion?: () => void;
+  onOpenStandings?: () => void;
 }
 
-export const MatchCountdown: React.FC<MatchCountdownProps> = ({ match, className = '', onOpenChampion }) => {
+export const MatchCountdown: React.FC<MatchCountdownProps> = ({
+  match,
+  className = '',
+  onOpenChampion,
+  onOpenStandings,
+}) => {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -96,25 +102,41 @@ export const MatchCountdown: React.FC<MatchCountdownProps> = ({ match, className
         {/* Luz dourada de celebração no fundo */}
         <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/15 rounded-full blur-xl pointer-events-none" />
 
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 text-slate-300 font-extrabold text-xs">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
             <span className="uppercase tracking-wider text-slate-200">Partida Encerrada</span>
           </div>
 
-          {onOpenChampion && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenChampion();
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 active:scale-95 transition-all cursor-pointer animate-pulse"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
-              <span>Ver Time Campeão 🏆</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {onOpenStandings && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenStandings();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              >
+                <Table className="w-3.5 h-3.5 text-slate-950" />
+                <span>Ver Tabela de Classificação 📊</span>
+              </button>
+            )}
+
+            {onOpenChampion && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenChampion();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 active:scale-95 transition-all cursor-pointer animate-pulse"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
+                <span>Ver Time Campeão 🏆</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

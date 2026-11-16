@@ -19,6 +19,9 @@ import {
   CheckCircle2,
   MinusCircle,
   XCircle,
+  Crown,
+  Info,
+  Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -212,26 +215,44 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
     const statsMap: Record<number, TeamStanding> = {};
 
     // Determinar quais times devem aparecer na tabela
-    const maxTeam = numTeams || 4;
-    for (let t = 1; t <= maxTeam; t++) {
-      const info = getTeamInfoForTable(t);
-      statsMap[t] = {
-        team: t,
-        teamName: info.name,
-        teamColor: info.color,
-        teamEmoji: info.emoji,
-        teamBadgeUrl: info.badge_url,
-        matchesPlayed: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0,
-        points: 0,
-        form: [],
-      };
+    // Garante que todas as equipes cadastradas na partida (via num_times, custom_config ou jogos) sejam incluídas
+    const totalTeams = match?.num_times || numTeams || 4;
+    const teamSet = new Set<number>();
+    for (let t = 1; t <= totalTeams; t++) {
+      teamSet.add(t);
     }
+    if (match?.teams_custom_config && typeof match.teams_custom_config === 'object') {
+      Object.keys(match.teams_custom_config).forEach((k) => {
+        const n = parseInt(k, 10);
+        if (!isNaN(n) && n > 0) teamSet.add(n);
+      });
+    }
+    games.forEach((game) => {
+      if (game.team_a) teamSet.add(game.team_a);
+      if (game.team_b) teamSet.add(game.team_b);
+    });
+
+    Array.from(teamSet)
+      .sort((a, b) => a - b)
+      .forEach((t) => {
+        const info = getTeamInfoForTable(t);
+        statsMap[t] = {
+          team: t,
+          teamName: info.name,
+          teamColor: info.color,
+          teamEmoji: info.emoji,
+          teamBadgeUrl: info.badge_url,
+          matchesPlayed: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDifference: 0,
+          points: 0,
+          form: [],
+        };
+      });
 
     // Processar cada jogo finalizado
     games.forEach((game) => {
@@ -315,9 +336,11 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
       // 4. Gols / Pontos Pró
       if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
       // 5. Menos Gols / Pontos Contra
-      return a.goalsAgainst - b.goalsAgainst;
+      if (a.goalsAgainst !== b.goalsAgainst) return a.goalsAgainst - b.goalsAgainst;
+      // 6. Número do time como desempate final determinístico
+      return a.team - b.team;
     });
-  }, [games, numTeams, isVolei]);
+  }, [games, numTeams, isVolei, match]);
 
   // Calcular Artilheiros
   const topScorers: PlayerScorer[] = useMemo(() => {
@@ -340,6 +363,11 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
     return Object.values(map).sort((a, b) => b.goalsCount - a.goalsCount);
   }, [goals]);
 
+  // Total de gols/pontos acumulados na partida
+  const totalScores = useMemo(() => {
+    return games.reduce((acc, g) => acc + (g.score_a || 0) + (g.score_b || 0), 0);
+  }, [games]);
+
   return (
     <div className="space-y-6">
       {/* ═══════════════════════════════════════════════════════════════════
@@ -350,136 +378,67 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4"
+        className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+        {/* Cabeçalho do Card */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
               isVolei ? 'bg-amber-500/10 border border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500'
             }`}>
               <Trophy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                {isVolei ? 'Tabela de Classificação do Vôlei 🏐' : 'Tabela de Classificação ⚽'}
-              </h3>
-              <span className="text-[11px] text-slate-400 font-medium">
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
+                  {isVolei ? 'Classificação do Vôlei 🏐' : 'Classificação da Partida ⚽'}
+                </h3>
+              </div>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 {isVolei
-                  ? 'Atualizada automaticamente a cada ponto (3 pts por vitória, sem empates)'
-                  : 'Atualizada automaticamente a cada gol e encerramento de jogo'}
+                  ? 'Vitória: 3 pontos • Sem empates no vôlei'
+                  : 'Vitória: 3 pts • Empate: 1 pt • Derrota: 0 pts'}
               </span>
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Tempo Real</span>
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            {games.length > 0 && (
+              <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                {games.length} {games.length === 1 ? 'jogo concluído' : 'jogos concluídos'}
+              </span>
+            )}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Tempo Real</span>
+            </div>
           </div>
         </div>
 
-        {/* VISUALIZAÇÃO MOBILE (CARDS DE EQUIPES) */}
-        <div className="block sm:hidden space-y-2.5">
-          {standings.map((st, idx) => {
-            const pos = idx + 1;
-            const isLeader = pos === 1 && st.points > 0;
-            return (
-              <div
-                key={st.team}
-                className={`p-3.5 rounded-2xl border transition-all ${
-                  isLeader
-                    ? 'bg-amber-500/10 border-amber-500/30 shadow-xs'
-                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
-                        pos === 1
-                          ? 'bg-amber-400 text-slate-950 shadow-xs'
-                          : pos === 2
-                          ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
-                          : pos === 3
-                          ? 'bg-amber-700/30 text-amber-600 dark:text-amber-400'
-                          : 'text-slate-400 bg-slate-100 dark:bg-slate-800'
-                      }`}
-                    >
-                      {pos}º
-                    </span>
-
-                    <TeamBadge
-                      teamInfo={{
-                        name: st.teamName,
-                        emoji: st.teamEmoji,
-                        badge_url: st.teamBadgeUrl,
-                        color: st.teamColor,
-                      }}
-                      size="xs"
-                      rounded="md"
-                      showBorder={false}
-                    />
-
-                    <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                      {st.teamName}
-                    </span>
-                  </div>
-
-                  {/* Pontos em destaque */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="px-2.5 py-1 rounded-xl bg-brand-500/15 text-brand-600 dark:text-brand-400 font-black text-xs border border-brand-500/25">
-                      {st.points} {st.points === 1 ? 'pt' : 'pts'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Linha de Estatísticas Rápidas */}
-                <div className="grid grid-cols-4 gap-1 pt-2.5 mt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 text-center text-[11px]">
-                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
-                    <span className="block text-[9px] font-black text-slate-400 uppercase">Jogos</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">{st.matchesPlayed}</span>
-                  </div>
-                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
-                    <span className="block text-[9px] font-black text-slate-400 uppercase">Vitórias</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{st.wins}V</span>
-                  </div>
-                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
-                    <span className="block text-[9px] font-black text-slate-400 uppercase">
-                      {isVolei ? 'Pontos' : 'Gols'}
-                    </span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">
-                      {st.goalsFor}:{st.goalsAgainst}
-                    </span>
-                  </div>
-                  <div className="p-1 rounded-lg bg-white/60 dark:bg-slate-900/60">
-                    <span className="block text-[9px] font-black text-slate-400 uppercase">Saldo</span>
-                    <span className={`font-bold ${st.goalDifference > 0 ? 'text-emerald-500' : st.goalDifference < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-                      {st.goalDifference > 0 ? `+${st.goalDifference}` : st.goalDifference}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Tabela Tradicional para Desktops */}
-        <div className="hidden sm:block overflow-x-auto -mx-4 sm:mx-0">
-          <table className="w-full text-left text-xs min-w-[500px]">
+        {/* TABELA DE CLASSIFICAÇÃO UNIFICADA E RESPONSIVA */}
+        <div className="overflow-x-auto no-scrollbar scrollbar-none -mx-4 sm:mx-0 px-4 sm:px-0">
+          <table className="w-full text-left border-collapse min-w-[340px] sm:min-w-[540px]">
             <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-black tracking-wider text-slate-400">
-                <th className="py-2.5 px-3">Pos</th>
-                <th className="py-2.5 px-3">Time</th>
-                <th className="py-2.5 px-2 text-center" title="Partidas Disputadas">J</th>
-                <th className="py-2.5 px-2 text-center" title="Vitórias">V</th>
+              <tr className="border-b border-slate-200/70 dark:border-slate-800 text-[10px] uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">
+                <th className="py-2.5 px-2 text-center w-10">POS</th>
+                <th className="py-2.5 px-2">TIME</th>
+                <th className="py-2.5 px-2 text-center text-emerald-600 dark:text-emerald-400 font-black" title="Pontos">PTS</th>
+                <th className="py-2.5 px-2 text-center text-emerald-600 dark:text-emerald-400" title="Vitórias">V</th>
                 {!isVolei && (
-                  <th className="py-2.5 px-2 text-center" title="Empates">E</th>
+                  <th className="py-2.5 px-2 text-center text-amber-500 dark:text-amber-400" title="Empates">E</th>
                 )}
-                <th className="py-2.5 px-2 text-center" title="Derrotas">D</th>
-                <th className="py-2.5 px-2 text-center" title={isVolei ? 'Pontos Pró' : 'Gols Pró'}>{isVolei ? 'PP' : 'GP'}</th>
-                <th className="py-2.5 px-2 text-center" title={isVolei ? 'Pontos Contra' : 'Gols Contra'}>{isVolei ? 'PC' : 'GC'}</th>
-                <th className="py-2.5 px-2 text-center" title={isVolei ? 'Saldo de Pontos' : 'Saldo de Gols'}>{isVolei ? 'SP' : 'SG'}</th>
-                <th className="py-2.5 px-3 text-center text-brand-600 dark:text-brand-400 font-black" title="Pontos na Classificação">PTS</th>
-                <th className="py-2.5 px-3 text-center">Forma</th>
+                <th className="py-2.5 px-2 text-center text-rose-500" title="Derrotas">D</th>
+                <th className="py-2.5 px-2 text-center" title={isVolei ? 'Saldo de Pontos' : 'Saldo de Gols'}>
+                  {isVolei ? 'SP' : 'SG'}
+                </th>
+                <th className="py-2.5 px-2 text-center text-slate-400 hidden sm:table-cell" title="Partidas Disputadas">J</th>
+                <th className="py-2.5 px-2 text-center text-slate-400 hidden md:table-cell" title={isVolei ? 'Pontos Pró' : 'Gols Pró'}>
+                  {isVolei ? 'PP' : 'GP'}
+                </th>
+                <th className="py-2.5 px-2 text-center text-slate-400 hidden md:table-cell" title={isVolei ? 'Pontos Contra' : 'Gols Contra'}>
+                  {isVolei ? 'PC' : 'GC'}
+                </th>
+                <th className="py-2.5 px-3 text-center text-slate-400 hidden lg:table-cell">FORMA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-semibold">
@@ -489,22 +448,24 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
                 return (
                   <tr
                     key={st.team}
-                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
-                      isLeader ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''
+                    className={`transition-colors group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
+                      isLeader
+                        ? 'bg-amber-500/[0.04] dark:bg-amber-500/[0.08]'
+                        : ''
                     }`}
                   >
                     {/* Posição */}
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1">
+                    <td className="py-3 px-2 text-center">
+                      <div className="flex items-center justify-center">
                         <span
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs transition-transform group-hover:scale-105 ${
                             pos === 1
-                              ? 'bg-amber-400 text-slate-950 shadow-xs'
+                              ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-400/50'
                               : pos === 2
-                              ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
+                              ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
                               : pos === 3
-                              ? 'bg-amber-700/30 text-amber-600 dark:text-amber-400'
-                              : 'text-slate-400'
+                              ? 'bg-amber-700/25 text-amber-700 dark:text-amber-400'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
                           }`}
                         >
                           {pos}º
@@ -512,9 +473,9 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Nome do Time */}
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
+                    {/* Identidade do Time */}
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <TeamBadge
                           teamInfo={{
                             name: st.teamName,
@@ -538,54 +499,84 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
                             }
                           }}
                         />
-                        <div>
-                          <span className="font-extrabold text-xs text-slate-900 dark:text-white block">
-                            {st.teamName}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate block">
+                              {st.teamName}
+                            </span>
+                            {isLeader && (
+                              <span title="Líder da Classificação" className="inline-flex">
+                                <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              </span>
+                            )}
+                          </div>
+                          {/* Em telas menores, exibe o total de jogos como subtítulo elegante */}
+                          <span className="text-[10px] text-slate-400 font-medium sm:hidden block leading-tight">
+                            {st.matchesPlayed} {st.matchesPlayed === 1 ? 'jogo' : 'jogos'}
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Estatísticas */}
-                    <td className="py-3 px-2 text-center font-medium text-slate-600 dark:text-slate-300">
-                      {st.matchesPlayed}
-                    </td>
-                    <td className="py-3 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400">
-                      {st.wins}
-                    </td>
-                    {!isVolei && (
-                      <td className="py-3 px-2 text-center font-medium text-amber-600 dark:text-amber-400">
-                        {st.draws}
-                      </td>
-                    )}
-                    <td className="py-3 px-2 text-center font-medium text-rose-500">
-                      {st.losses}
-                    </td>
-                    <td className="py-3 px-2 text-center font-medium text-slate-500">
-                      {st.goalsFor}
-                    </td>
-                    <td className="py-3 px-2 text-center font-medium text-slate-500">
-                      {st.goalsAgainst}
-                    </td>
-                    <td
-                      className={`py-3 px-2 text-center font-bold ${
-                        st.goalDifference > 0
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : st.goalDifference < 0
-                          ? 'text-rose-500'
-                          : 'text-slate-400'
-                      }`}
-                    >
-                      {st.goalDifference > 0 ? `+${st.goalDifference}` : st.goalDifference}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 font-black text-sm font-mono">
+                    {/* 1. Pontuação (PTS) - Destaque Principal */}
+                    <td className="py-3 px-2 text-center">
+                      <span className="inline-flex items-center justify-center min-w-[32px] sm:min-w-[36px] py-1 px-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-xs sm:text-sm border border-emerald-500/25 shadow-2xs">
                         {st.points}
                       </span>
                     </td>
 
-                    {/* Forma Recente */}
-                    <td className="py-3 px-3">
+                    {/* 2. Vitórias (V) */}
+                    <td className="py-3 px-2 text-center">
+                      <span className="font-extrabold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+                        {st.wins}
+                      </span>
+                    </td>
+
+                    {/* 3. Empates (E) */}
+                    {!isVolei && (
+                      <td className="py-3 px-2 text-center">
+                        <span className="font-extrabold text-xs sm:text-sm text-amber-600 dark:text-amber-400">
+                          {st.draws}
+                        </span>
+                      </td>
+                    )}
+
+                    {/* 4. Derrotas (D) */}
+                    <td className="py-3 px-2 text-center">
+                      <span className="font-extrabold text-xs sm:text-sm text-rose-500 dark:text-rose-400">
+                        {st.losses}
+                      </span>
+                    </td>
+
+                    {/* 5. Saldo de Gols / Saldo de Pontos (SG) */}
+                    <td className="py-3 px-2 text-center">
+                      <span
+                        className={`font-black text-xs sm:text-sm ${
+                          st.goalDifference > 0
+                            ? 'text-emerald-500'
+                            : st.goalDifference < 0
+                            ? 'text-rose-500'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {st.goalDifference > 0 ? `+${st.goalDifference}` : st.goalDifference}
+                      </span>
+                    </td>
+
+                    {/* Colunas complementares no Desktop */}
+                    <td className="py-3 px-2 text-center font-medium text-slate-500 dark:text-slate-400 hidden sm:table-cell text-xs">
+                      {st.matchesPlayed}
+                    </td>
+
+                    <td className="py-3 px-2 text-center font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell text-xs">
+                      {st.goalsFor}
+                    </td>
+
+                    <td className="py-3 px-2 text-center font-medium text-slate-500 dark:text-slate-400 hidden md:table-cell text-xs">
+                      {st.goalsAgainst}
+                    </td>
+
+                    <td className="py-3 px-3 text-center hidden lg:table-cell">
                       <div className="flex items-center justify-center gap-1">
                         {st.form.length === 0 ? (
                           <span className="text-[10px] text-slate-400">-</span>
@@ -615,13 +606,32 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({
           </table>
         </div>
 
+        {/* AVISO QUANDO NENHUMA PARTIDA FOI FINALIZADA */}
         {games.length === 0 && (
-          <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-            {isVolei
-              ? 'Nenhum jogo de vôlei finalizado ainda nesta rodada. A classificação será computada conforme os sets forem concluídos!'
-              : 'Nenhuma partida finalizada ainda nesta rodada. O placar e a classificação serão computados assim que os jogos forem concluídos!'}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+            <Info className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>
+              {isVolei
+                ? 'Nenhum set finalizado ainda. As pontuações e estatísticas serão atualizadas automaticamente assim que os jogos forem concluídos!'
+                : 'Nenhuma partida finalizada ainda nesta rodada. O placar e a classificação serão computados assim que os jogos forem concluídos!'}
+            </span>
           </div>
         )}
+
+        {/* LEGENDA E CRITÉRIOS DE DESEMPATE */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[11px] text-slate-400 dark:text-slate-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold">
+            <span><strong className="text-emerald-500">PTS:</strong> Pontos</span>
+            <span><strong className="text-emerald-500">V:</strong> Vitórias</span>
+            {!isVolei && <span><strong className="text-amber-500">E:</strong> Empates</span>}
+            <span><strong className="text-rose-500">D:</strong> Derrotas</span>
+            <span><strong className="text-slate-700 dark:text-slate-300">{isVolei ? 'SP:' : 'SG:'}</strong> {isVolei ? 'Saldo de Pontos' : 'Saldo de Gols'}</span>
+          </div>
+
+          <div className="text-[10px] sm:text-right font-medium text-slate-400">
+            Critérios de desempate: 1º Pontos • 2º Vitórias • 3º Saldo • 4º Pró • 5º Menos Contra
+          </div>
+        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════

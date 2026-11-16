@@ -55,6 +55,10 @@ const ChampionModal = dynamic(
   () => import("@/components/ChampionModal").then((m) => m.ChampionModal),
   { ssr: false }
 );
+const MatchStandingsModal = dynamic(
+  () => import("@/components/MatchStandingsModal").then((m) => m.MatchStandingsModal),
+  { ssr: false }
+);
 const CreateLeagueModal = dynamic(
   () => import("@/components/CreateLeagueModal").then((m) => m.CreateLeagueModal),
   { ssr: false }
@@ -189,6 +193,19 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
     null,
   );
   const [championLoading, setChampionLoading] = useState(false);
+
+  // Estados para o Modal de Tabela de Classificação da Partida
+  const [isStandingsOpen, setIsStandingsOpen] = useState(false);
+  const [standingsMatch, setStandingsMatch] = useState<Match | null>(null);
+
+  const handleOpenStandingsModal = (
+    match: Match,
+    e?: React.MouseEvent,
+  ) => {
+    if (e) e.stopPropagation();
+    setStandingsMatch(match);
+    setIsStandingsOpen(true);
+  };
 
   const handleOpenChampionModal = async (
     match: Match,
@@ -855,10 +872,11 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
 
                         <div className="space-y-3.5 pt-1">
-                          {/* Selo "Partida Encerrada" + Botão "Ver Time Campeão" */}
+                          {/* Selo "Partida Encerrada" + Botões "Ver Tabela de Classificação" e "Ver Time Campeão" */}
                           <MatchCountdown
                             match={match}
                             onOpenChampion={() => handleOpenChampionModal(match)}
+                            onOpenStandings={() => handleOpenStandingsModal(match)}
                           />
 
                           {/* Título da Partida */}
@@ -1390,6 +1408,19 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
               }}
               championData={championData}
               loading={championLoading}
+            />
+          )}
+
+          {/* MODAL DA TABELA DE CLASSIFICAÇÃO DA PARTIDA ENCERRADA */}
+          {isStandingsOpen && standingsMatch && (
+            <MatchStandingsModal
+              isOpen={isStandingsOpen}
+              onClose={() => {
+                setIsStandingsOpen(false);
+                setStandingsMatch(null);
+              }}
+              match={standingsMatch}
+              onOpenChampion={() => handleOpenChampionModal(standingsMatch)}
             />
           )}
         </div>

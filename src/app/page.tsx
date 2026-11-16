@@ -88,10 +88,6 @@ const MatchListSection = dynamic(
   () => import("@/components/MatchListSection").then((m) => m.MatchListSection),
   { ssr: false },
 );
-const StandingsTable = dynamic(
-  () => import("@/components/StandingsTable").then((m) => m.StandingsTable),
-  { ssr: false },
-);
 const LeagueIndividualRankings = dynamic(
   () => import("@/components/LeagueIndividualRankings").then((m) => m.LeagueIndividualRankings),
   { ssr: false },
@@ -1361,19 +1357,9 @@ export default function Home() {
               <TournamentListSection />
             )}
 
-            {/* ABA 2: RANKINGS & CLASSIFICAÇÃO */}
+            {/* ABA 2: RANKINGS INDIVIDUAIS */}
             {leagueTab === "standings" && (
-              <div className="space-y-6">
-                <LeagueIndividualRankings league={currentLeague} />
-                <div className="pt-4">
-                  <StandingsTable
-                    leagueId={currentLeague?.id}
-                    sportType={currentLeague?.sport_type}
-                    numTeams={4}
-                    showTopScorers={false}
-                  />
-                </div>
-              </div>
+              <LeagueIndividualRankings league={currentLeague} />
             )}
 
             {/* ABA 3: FEED & RESENHA EXCLUSIVO DA LIGA */}

@@ -65,6 +65,7 @@ import { useLeague } from "@/context/LeagueContext";
 import { getTeamInfo } from "@/lib/teamsHelper";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChampionModal } from "@/components/ChampionModal";
+import { MatchStandingsModal } from "@/components/MatchStandingsModal";
 import {
   getMatchChampionData,
   MatchChampionResult,
@@ -204,6 +205,9 @@ export default function MatchDetailPage({
     null,
   );
   const [championLoading, setChampionLoading] = useState(false);
+
+  // Estados para o Modal de Tabela de Classificação Final
+  const [isStandingsModalOpen, setIsStandingsModalOpen] = useState(false);
 
   const handleOpenChampionModal = async () => {
     if (!match) return;
@@ -1709,6 +1713,7 @@ export default function MatchDetailPage({
             <MatchCountdown
               match={match}
               onOpenChampion={isEnded ? handleOpenChampionModal : undefined}
+              onOpenStandings={isEnded ? () => setIsStandingsModalOpen(true) : undefined}
             />
 
             <div className="space-y-2">
@@ -3367,6 +3372,16 @@ export default function MatchDetailPage({
         championData={championData}
         loading={championLoading}
       />
+
+      {/* MODAL DA TABELA DE CLASSIFICAÇÃO DA PARTIDA ENCERRADA */}
+      {isStandingsModalOpen && match && (
+        <MatchStandingsModal
+          isOpen={isStandingsModalOpen}
+          onClose={() => setIsStandingsModalOpen(false)}
+          match={match}
+          onOpenChampion={handleOpenChampionModal}
+        />
+      )}
 
       {/* MODAL DE DESTAQUES DA RODADA (MVP & ANINGA 🐍) */}
       {match && (
