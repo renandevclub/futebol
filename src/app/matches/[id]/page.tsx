@@ -16,12 +16,11 @@ import {
   XCircle,
   Trash2,
   Shield,
-  Info,
+  Megaphone,
   Trophy,
   Shuffle,
   UserPlus,
   Sparkles,
-  Hand,
   ChevronDown,
   Receipt,
   MessageSquare,
@@ -170,6 +169,7 @@ export default function MatchDetailPage({
   const { canManageMatch } = useLeague();
 
   const [match, setMatch] = useState<Match | null>(null);
+  const [isObservationShown, setIsObservationShown] = useState(false);
   const canManageThisMatch = useMemo(() => {
     return canManageMatch(match);
   }, [canManageMatch, match]);
@@ -243,6 +243,13 @@ export default function MatchDetailPage({
     return Date.now() - matchDate.getTime() >= durationMs;
   }, [match]);
 
+  const isMatchVolei = useMemo(() => {
+    return (
+      match?.sport_type === "volei" ||
+      match?.organization?.sport_type === "volei"
+    );
+  }, [match]);
+
   const mapUrl = useMemo(() => {
     if (!match) return "";
     if (match.maps_url) return match.maps_url;
@@ -308,6 +315,20 @@ export default function MatchDetailPage({
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!match?.observacoes) {
+      setIsObservationShown(false);
+      return;
+    }
+
+    setIsObservationShown(false);
+    const frame = window.requestAnimationFrame(() => {
+      setIsObservationShown(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [match?.id, match?.observacoes]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     type: "sort" | "clear";
@@ -1284,7 +1305,9 @@ export default function MatchDetailPage({
                 });
               }
             }}
-            className={`w-10 h-10 rounded-full bg-brand-500 text-white font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 transition-all border-2 border-white dark:border-slate-800 shadow-sm ${
+            className={`w-10 h-10 rounded-full ${
+              !p.user_id && p.guest_name ? "bg-amber-500" : "bg-brand-500"
+            } text-white font-bold text-xs flex items-center justify-center overflow-hidden shrink-0 transition-all border-2 border-white dark:border-slate-800 shadow-sm ${
               p.user?.avatar_url
                 ? "cursor-pointer hover:scale-110 active:scale-95 hover:ring-2 ring-brand-500/80 hover:shadow-md"
                 : "cursor-default"
@@ -1342,21 +1365,32 @@ export default function MatchDetailPage({
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
                 {p.user_id ? (
-                  <Link
-                    href={`/profile/${p.user_id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-black text-slate-900 dark:text-white text-xs sm:text-sm hover:text-brand-500 hover:underline transition-colors leading-tight inline-block cursor-pointer"
-                    title={`Ver perfil de ${displayName}`}
-                  >
-                    {displayName}
-                  </Link>
+                  <>
+                    <Link
+                      href={`/profile/${p.user_id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-black text-slate-900 dark:text-white text-xs sm:text-sm hover:text-brand-500 hover:underline transition-colors leading-tight inline-block cursor-pointer"
+                      title={`Ver perfil de ${displayName}`}
+                    >
+                      {displayName}
+                    </Link>
+                    <span
+                      className="px-1.5 py-px rounded-md text-[9px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 hidden sm:inline-flex items-center gap-0.5 select-none"
+                      title="Membro cadastrado na liga"
+                    >
+                      Membro
+                    </span>
+                  </>
                 ) : (
                   <div className="flex items-center gap-1.5">
                     <span className="font-black text-slate-900 dark:text-white text-xs sm:text-sm leading-tight inline-block">
                       {displayName}
                     </span>
-                    <span className="px-1.5 py-px rounded-md text-[9px] font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                      Avulso
+                    <span
+                      className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 flex items-center gap-1 select-none"
+                      title="Jogador convidado avulso (sem cadastro no aplicativo)"
+                    >
+                      <span>Convidado</span>
                     </span>
                   </div>
                 )}
@@ -1447,1550 +1481,1334 @@ export default function MatchDetailPage({
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
       />
 
-      <main className="max-w-3xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-24 sm:pb-8 pb-safe w-full flex-1 space-y-4 sm:space-y-6">
-        {/* Voltar */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-brand-500 transition-colors px-1"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Voltar para todas as partidas</span>
-        </Link>
-        {/* Card Principal da Partida */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden space-y-5 sm:space-y-6">
-          {/* Identificação Destacada da Liga Pertencente */}
-          {match.organization &&
-            (() => {
-              const isOrgVolei =
-                match.organization.sport_type === "volei" ||
-                match.sport_type === "volei";
-              return (
-                <div
-                  className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-white shadow-sm ${
-                    isOrgVolei
-                      ? "bg-gradient-to-r from-amber-950/60 via-slate-900/80 to-slate-900 border-amber-500/30"
-                      : "bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-slate-900 border-emerald-500/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black shrink-0 shadow-md ${
-                        isOrgVolei
-                          ? "bg-amber-500 shadow-amber-500/25"
-                          : "bg-emerald-500 shadow-emerald-500/25"
-                      }`}
-                    >
-                      {isOrgVolei ? "🏐" : "⚽"}
-                    </div>
-                    <div className="min-w-0">
-                      <span
-                        className={`text-[10px] font-black uppercase tracking-wider block leading-tight ${
-                          isOrgVolei ? "text-amber-400" : "text-emerald-400"
-                        }`}
-                      >
-                        {isOrgVolei ? "Liga de Vôlei" : "Liga de Futebol"}
-                      </span>
-                      <h3 className="text-sm sm:text-base font-black text-white tracking-tight truncate">
-                        {match.organization.name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {match.organization.owner && (
-                    <div className="text-right shrink-0">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Organizador
-                      </span>
-                      <span className="text-xs font-bold text-slate-200">
-                        👤 {match.organization.owner.nome}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-          {/* Top Header & Ações */}
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              {/* Badge de Vagas Restantes no topo à esquerda */}
-              <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs shrink-0 ${
-                  isFull
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
-                    : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                }`}
+      <main className="w-full flex-1 pb-28 sm:pb-12 pb-safe">
+        <div className="grid grid-cols-1 gap-y-5 sm:gap-y-6 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-10 max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 sm:pt-5">
+          {/* ═══════════════════════════════════════════════════════════════════
+              1. CABEÇALHO DA PARTIDA (Navegação, Liga, Organizador e Ações Rápidas)
+              Mobile First: Compacto, integrado à tela, sem cards gigantes.
+          ═══════════════════════════════════════════════════════════════════ */}
+          <header className="lg:col-span-12 space-y-3">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:justify-between sm:gap-3">
+              {/* Botão Voltar Touch-friendly */}
+              <Link
+                href="/"
+                className="inline-flex min-h-[42px] items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-brand-500 hover:border-brand-500/40 text-xs font-black transition-all shadow-xs shrink-0"
+                title="Voltar para todas as partidas"
               >
-                {!isFull ? (
-                  <>
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    <span>
-                      {remaining}{" "}
-                      {remaining === 1 ? "Vaga Restante" : "Vagas Restantes"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    <span>Partida Lotada</span>
-                  </>
-                )}
-              </div>
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden xs:inline">Voltar</span>
+              </Link>
 
-              {/* Botão de Compartilhar no WhatsApp */}
-              <motion.button
-                whileTap={{ scale: 0.92 }}
-                onClick={handleShareWhatsapp}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 rounded-xl text-xs font-extrabold transition-all shadow-xs"
-                title="Compartilhar no WhatsApp"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold">Compartilhar</span>
-              </motion.button>
-            </div>
-
-            {/* ═══════════════════════════════════════════════════════════════════
-                3 PRINCIPAIS OPÇÕES DO JOGADOR — Limpo, Intuitivo & em Destaque
-                1. Resumo Financeiro | 2. Classificação | 3. Modo Telão
-            ═══════════════════════════════════════════════════════════════════ */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
-              {/* 1. Resumo Financeiro */}
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                whileHover={{ scale: 1.01 }}
-                type="button"
-                onClick={() => setIsFinanceModalOpen(true)}
-                className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 p-2.5 sm:py-3.5 sm:px-4 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition-all shadow-xs group cursor-pointer"
-                title="Visualizar prestação de contas, transparência e pagamentos da partida"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                  <Receipt className="w-4 h-4" />
-                </div>
-                <div className="text-center sm:text-left min-w-0">
-                  <span className="block text-[11px] sm:text-xs font-black leading-tight truncate">
-                    Resumo Financeiro
-                  </span>
-                  <span className="hidden sm:block text-[10px] opacity-75 font-semibold">
-                    Prestação de Contas
-                  </span>
-                </div>
-              </motion.button>
-
-              {/* 2. Classificação */}
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                whileHover={{ scale: 1.01 }}
-                type="button"
-                onClick={() => setMatchTab("standings")}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 p-2.5 sm:py-3.5 sm:px-4 rounded-2xl border transition-all shadow-xs group cursor-pointer ${
-                  matchTab === "standings"
-                    ? "bg-amber-500 text-white border-amber-500 shadow-amber-500/25"
-                    : "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 border-amber-500/30 text-amber-700 dark:text-amber-300"
-                }`}
-                title="Ver tabela de pontos, vitórias e pontuadores"
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${
-                    matchTab === "standings"
-                      ? "bg-white/20 text-white"
-                      : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                  }`}
-                >
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div className="text-center sm:text-left min-w-0">
-                  <span className="block text-[11px] sm:text-xs font-black leading-tight truncate">
-                    Classificação
-                  </span>
-                  <span
-                    className={`hidden sm:block text-[10px] font-semibold ${
-                      matchTab === "standings" ? "text-amber-100" : "opacity-75"
+              {/* Identificação Compacta da Liga */}
+              {match.organization && (
+                <div className="flex min-w-0 items-center gap-2 justify-self-start px-0 sm:flex-1 sm:px-1">
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black shrink-0 shadow-xs border ${
+                      isMatchVolei
+                        ? "bg-amber-500/15 text-amber-500 border-amber-500/30"
+                        : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
                     }`}
                   >
-                    Tabela & Pontos
-                  </span>
+                    {isMatchVolei ? "🏐" : "⚽"}
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <span
+                      className={`text-[9px] font-black uppercase tracking-wider block leading-tight ${
+                        isMatchVolei ? "text-amber-500" : "text-emerald-500"
+                      }`}
+                    >
+                      {isMatchVolei ? "Liga de Vôlei" : "Liga de Futebol"}
+                    </span>
+                    <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
+                      {match.organization.name}
+                    </h2>
+                  </div>
                 </div>
-              </motion.button>
+              )}
 
-              {/* 3. Modo Telão (TV) */}
-              <Link
-                href={`/matches/${match.id}/tv`}
-                className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 p-2.5 sm:py-3.5 sm:px-4 rounded-2xl bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 border border-sky-500/30 text-sky-700 dark:text-sky-300 transition-all shadow-xs group cursor-pointer"
-                title="Abrir transmissão do placar em tela cheia para TV ou celular"
-              >
-                <div className="w-8 h-8 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform">
-                  <Tv className="w-4 h-4" />
-                </div>
-                <div className="text-center sm:text-left min-w-0">
-                  <span className="block text-[11px] sm:text-xs font-black leading-tight truncate">
-                    Modo Telão
-                  </span>
-                  <span className="hidden sm:block text-[10px] opacity-75 font-semibold">
-                    Transmissão TV
-                  </span>
-                </div>
-              </Link>
+              {/* Ações Rápidas de Topo */}
+              <div className="flex shrink-0 items-center justify-self-end gap-1 sm:gap-1.5">
+                {/* Compartilhar WhatsApp */}
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleShareWhatsapp}
+                  className="inline-flex min-h-[42px] items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  title="Compartilhar no WhatsApp"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Compartilhar</span>
+                </motion.button>
+
+                {/* Resumo Financeiro */}
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  type="button"
+                  onClick={() => setIsFinanceModalOpen(true)}
+                  className="inline-flex min-h-[42px] items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  title="Visualizar prestação de contas da partida"
+                >
+                  <Receipt className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="hidden sm:inline">Financeiro</span>
+                </motion.button>
+
+                {/* Modo Telão (TV) */}
+                <Link
+                  href={`/matches/${match.id}/tv`}
+                  className="inline-flex min-h-[42px] items-center gap-1.5 px-3 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/25 rounded-xl text-xs font-bold transition-all shadow-xs"
+                  title="Abrir transmissão do placar em tela cheia para TV ou celular"
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Telão</span>
+                </Link>
+              </div>
             </div>
 
-            {/* Painel Administrativo Discreto (Exibido apenas para o Organizador) */}
-            {isAdmin && (
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 mt-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <Shield className="w-3.5 h-3.5 text-brand-500" />
-                  <span>Painel do Organizador:</span>
+            {/* Organizador e disponibilidade de vagas */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 pt-2.5 dark:border-slate-800/60">
+              {match.organization?.owner && (
+                <div className="flex min-w-0 flex-1 basis-[140px] items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                    <Shield className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 leading-tight">
+                    <span className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                      Organizador
+                    </span>
+                    <strong className="block truncate text-xs font-black text-slate-900 dark:text-slate-100">
+                      {match.organization.owner.nome}
+                    </strong>
+                  </div>
                 </div>
+              )}
 
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Link
-                    href={`/matches/${match.id}/control`}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-brand-600 text-white rounded-lg text-[11px] font-black shadow-xs hover:opacity-95"
-                    title="Mesa de controle da arbitragem ao vivo"
-                  >
-                    <Radio className="w-3 h-3" />
-                    <span>Mesa de Controle</span>
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsHighlightsModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-500/40 text-amber-300 rounded-lg text-[11px] font-black cursor-pointer shadow-xs"
-                    title="Eleger o Craque da Partida (MVP) e o Pior da Partida (ANINGA 🐍)"
-                  >
-                    <Trophy className="w-3 h-3 text-amber-400" />
-                    <span>Craque & ANINGA 🐍</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPlayerManagerOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 rounded-lg text-[11px] font-black cursor-pointer shadow-xs"
-                    title="Adicionar ou gerenciar jogadores cadastrados na lista desta partida"
-                  >
-                    <UserPlus className="w-3 h-3 text-emerald-500" />
-                    <span>+ Adicionar Jogador</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsEditMatchOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-lg text-[11px] font-bold"
-                  >
-                    <Edit3 className="w-3 h-3 text-amber-500" />
-                    <span>Editar</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsWhatsAppModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-[11px] font-bold"
-                  >
-                    <MessageSquare className="w-3 h-3 text-emerald-500" />
-                    <span>Avisar Jogadores</span>
-                  </button>
-                </div>
+              <div
+                role="status"
+                aria-live="polite"
+                aria-label={
+                  isFull
+                    ? "Partida lotada, nenhuma vaga restante"
+                    : `${remaining} ${remaining === 1 ? "vaga restante" : "vagas restantes"}`
+                }
+                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                  isFull
+                    ? "border-rose-400/25 bg-rose-500/5 text-rose-700 dark:border-rose-400/20 dark:text-rose-300"
+                    : "border-emerald-400/25 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-2 w-2 shrink-0 rounded-full ${
+                    isFull
+                      ? "bg-rose-500"
+                      : "bg-emerald-500 motion-safe:animate-pulse"
+                  }`}
+                />
+                <span className="whitespace-nowrap">
+                  {isFull ? (
+                    "Partida lotada"
+                  ) : (
+                    <>
+                      <strong className="font-black tabular-nums">
+                        {remaining}
+                      </strong>{" "}
+                      {remaining === 1 ? "vaga restante" : "vagas restantes"}
+                    </>
+                  )}
+                </span>
               </div>
-            )}
-          </div>
+            </div>
+          </header>
 
-          {/* Título, Cronômetro, Badges e GPS */}
-          <div className="space-y-3">
-            {/* Título centralizado no topo com tipografia esportiva — exclusivo JOGADORES */}
-            {isPlayer && (
-              <div className="flex flex-col items-center gap-1.5 py-1">
-                <h1
-                  className="font-black text-2xl sm:text-3xl text-slate-900 dark:text-white text-center leading-none tracking-widest uppercase italic group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors"
-                  style={{ fontStretch: "condensed" }}
-                >
+          {/* ═══════════════════════════════════════════════════════════════════
+              2. INFORMAÇÕES DA PARTIDA (HERO ESPORTIVO)
+          ═══════════════════════════════════════════════════════════════════ */}
+          <section className="lg:col-span-7 space-y-4">
+            {/* Título da partida */}
+            <div className="space-y-2.5">
+              {/* Composição por gênero para vôlei */}
+              {isMatchVolei &&
+                (() => {
+                  const customGenderLimits = (
+                    match.teams_custom_config as any
+                  )?.gender_limits;
+                  const maxH =
+                    match.max_homens_por_time ??
+                    customGenderLimits?.max_homens_por_time;
+                  const maxM =
+                    match.max_mulheres_por_time ??
+                    customGenderLimits?.max_mulheres_por_time;
+                  if (
+                    maxH !== undefined &&
+                    maxM !== undefined &&
+                    (maxH > 0 || maxM > 0)
+                  ) {
+                    return (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] font-black tracking-wider">
+                        ⚖️ ♂️ {maxH} Homens + ♀️ {maxM} Mulheres / time
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+
+              {/* Título Oficial */}
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-1.5 h-10 rounded-full shrink-0 ${
+                    isMatchVolei ? "bg-amber-400" : "bg-emerald-500"
+                  }`}
+                />
+                <h1 className="font-black text-2xl sm:text-3xl text-slate-900 dark:text-white leading-tight tracking-tight">
                   {match.titulo}
                 </h1>
-                <div className="w-16 h-1 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
               </div>
-            )}
+            </div>
 
+            {/* Cronômetro Esportivo */}
             <MatchCountdown
               match={match}
               onOpenChampion={isEnded ? handleOpenChampionModal : undefined}
               onOpenStandings={isEnded ? () => setIsStandingsModalOpen(true) : undefined}
             />
 
-            <div className="space-y-2">
-              {/* Título com Indicador Esportivo Luminoso — apenas Administradores */}
-              {!isPlayer && (
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-2.5 h-7 sm:h-8 rounded-full shrink-0 ${
-                      match.sport_type === "volei" ||
-                      match.organization?.sport_type === "volei"
-                        ? "bg-gradient-to-b from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.4)]"
-                        : "bg-gradient-to-b from-brand-400 via-emerald-500 to-teal-600 shadow-[0_0_12px_rgba(34,197,94,0.4)]"
-                    }`}
-                  />
-                  <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
-                    {match.titulo}
-                  </h1>
+            {/* Grade de Estatísticas e Métricas da Partida */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+              {/* Data */}
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                  <Calendar className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    Data
+                  </span>
                 </div>
-              )}
+                <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                  {formattedDate}
+                </span>
+              </div>
 
-              {/* Badges de Modalidade, Vagas e GPS integrados — apenas Administradores */}
-              {!isPlayer && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Badge de Modalidade Esportiva */}
+              {/* Horário */}
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    Horário
+                  </span>
+                </div>
+                <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                  {match.horario.substring(0, 5)}
+                </span>
+              </div>
+
+              {/* Coleta */}
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    Coleta
+                  </span>
+                </div>
+                <span className="font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+                  {match.valor > 0 ? `R$ ${match.valor.toFixed(2)}` : "Grátis"}
+                </span>
+              </div>
+
+              {/* Inscritos */}
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                  <Users className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    Inscritos
+                  </span>
+                </div>
+                <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                  {participants.length} / {match.limite_participantes}
+                </span>
+              </div>
+
+              {/* Formação */}
+              <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                  <Shield className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    Formação
+                  </span>
+                </div>
+                <span className="font-black text-xs sm:text-sm text-brand-500 leading-tight">
+                  {match.num_times} times × {match.jogadores_por_time} jog.
+                </span>
+              </div>
+            </div>
+
+            {/* Localização & Rota (Como Chegar) */}
+            <motion.a
+              whileTap={{ scale: 0.98 }}
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 transition-all shadow-xs group cursor-pointer"
+              title="Abrir rota no Google Maps / GPS"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500 group-hover:scale-105 transition-transform">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 block truncate">
+                    {match.local}
+                  </span>
+                  {match.endereco && (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      {match.endereco}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 shadow-xs group-hover:bg-emerald-600 transition-colors">
+                <Navigation className="w-3 h-3 shrink-0" />
+                <span>Como Chegar</span>
+              </div>
+            </motion.a>
+          </section>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              3. ÁREA DE DESTAQUES & SITUAÇÃO PESSOAL DO JOGADOR
+          ═══════════════════════════════════════════════════════════════════ */}
+          <section className="lg:col-span-5 space-y-3.5">
+            {/* BANNER DE RASPADINHA PARA O PARTICIPANTE INSCRITO */}
+            {isJoined && currentParticipant && match.sorteio_raspadinha_ativo && (
+              <div
+                className={`hidden sm:block p-4 sm:p-5 rounded-2xl sm:rounded-3xl space-y-2.5 text-center animate-in fade-in duration-300 border shadow-xs ${
+                  currentParticipant.team != null
+                    ? "bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/30"
+                    : "bg-gradient-to-r from-amber-500/20 via-brand-500/20 to-purple-500/20 border-amber-400/40"
+                }`}
+              >
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-xs ${
+                    currentParticipant.team != null
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                      : "bg-amber-500/20 text-amber-500 dark:text-amber-400"
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>
+                    {currentParticipant.team != null
+                      ? "🔒 Sorteio da Raspadinha Concluído"
+                      : "🎰 Raspadinha da Sorte Ativada!"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-2">
+                  {currentParticipant.team != null &&
+                    (() => {
+                      const teamNum = currentParticipant.team;
+                      const tInfo = getTeamInfo(match, teamNum);
+                      return (
+                        <TeamBadge
+                          teamInfo={tInfo}
+                          size="sm"
+                          rounded="xl"
+                          onClick={(e) => {
+                            if (tInfo.badge_url) {
+                              e.stopPropagation();
+                              openImagePreview({
+                                imageUrl: tInfo.badge_url,
+                                title: tInfo.name,
+                                subtitle: `Seu Time Oficial • ${match.titulo || "Partida"}`,
+                                type: "team_badge",
+                                badge: "Seu Time",
+                              });
+                            }
+                          }}
+                        />
+                      );
+                    })()}
+                  <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
+                    {currentParticipant.team != null
+                      ? `Seu Time Oficial: ${getTeamInfo(match, currentParticipant.team).name}`
+                      : "Você ainda não possui um time nesta partida!"}
+                  </h3>
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed font-medium">
+                  {currentParticipant.team != null
+                    ? "Seu sorteio por raspadinha já foi registrado e vinculado permanentemente no banco de dados para esta partida."
+                    : "Clique no botão abaixo para abrir sua raspadinha individual e descobrir o seu time."}
+                </p>
+
+                {/* Botão de Abrir Raspadinha exibido APENAS se team for NULL e partida não encerrada */}
+                {!isEnded && currentParticipant.team == null && (
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    whileHover={{ scale: 1.03 }}
+                    onClick={() => setIsScratchCardOpen(true)}
+                    className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-brand-500 hover:from-amber-600 hover:to-brand-600 text-white font-black rounded-xl text-xs shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-2 mx-auto mt-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Abrir Minha Raspadinha Virtual</span>
+                  </motion.button>
+                )}
+              </div>
+            )}
+
+            {/* CARD DE STATUS DE PAGAMENTO PIX PARA INSCRITO */}
+            {isJoined && currentParticipant && match.valor > 0 && (
+              <div
+                className={`hidden sm:flex p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border flex-col sm:flex-row items-center justify-between gap-3 shadow-xs ${
+                  currentParticipant.paid
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                   <div
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs shrink-0 ${
-                      match.sport_type === "volei" ||
-                      match.organization?.sport_type === "volei"
-                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      currentParticipant.paid
+                        ? "bg-emerald-500/20"
+                        : "bg-amber-500/20"
                     }`}
                   >
-                    <span>
-                      {match.sport_type === "volei" ||
-                      match.organization?.sport_type === "volei"
-                        ? "🏐 Vôlei"
-                        : "⚽ Futebol"}
+                    {currentParticipant.paid ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <QrCode className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-black text-xs block">
+                      {currentParticipant.paid
+                        ? "Pagamento Confirmado! ✅"
+                        : isEnded
+                          ? "Partida Encerrada"
+                          : "Pagamento da Inscrição Pendente ⏳"}
+                    </span>
+                    <span className="text-[11px] opacity-80 block font-medium">
+                      {currentParticipant.paid
+                        ? `Sua taxa de R$ ${match.valor.toFixed(2)} já foi baixada no sistema.`
+                        : isEnded
+                          ? "O evento já foi realizado."
+                          : `Realize o pagamento de R$ ${match.valor.toFixed(2)} via PIX para garantir sua vaga.`}
+                    </span>
+                  </div>
+                </div>
+
+                {!isEnded && !currentParticipant.paid && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsPixModalOpen(true)}
+                    className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>Pagar R$ {match.valor.toFixed(2)} via PIX</span>
+                  </motion.button>
+                )}
+              </div>
+            )}
+
+            {/* BOTÃO PRINCIPAL DE INSCRIÇÃO NO DESKTOP */}
+            {!isEnded && (
+              <div className="hidden sm:block">
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.01 }}
+                  onClick={handleToggleJoin}
+                  disabled={!isJoined && isFull}
+                  className={`w-full py-3.5 rounded-2xl font-black text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                    isJoined
+                      ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/25"
+                      : isFull
+                        ? "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                        : "bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/30"
+                  }`}
+                >
+                  {isJoined ? (
+                    <>
+                      <XCircle className="w-5 h-5" />
+                      <span>Cancelar Minha Participação</span>
+                    </>
+                  ) : isFull ? (
+                    <span>Partida Lotada (Sem vagas disponíveis)</span>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Quero Participar! Garanta Minha Vaga</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            )}
+
+            {/* AVISO DA ORGANIZAÇÃO */}
+            {match.observacoes && (
+              <aside
+                role="note"
+                aria-labelledby="match-observation-title"
+                className="relative isolate overflow-hidden rounded-[1.6rem] border border-amber-300/80 bg-gradient-to-br from-amber-50 via-white to-orange-50 shadow-[0_10px_30px_rgba(245,158,11,0.16)] dark:border-amber-300/35 dark:from-[#211706] dark:via-[#111827] dark:to-[#25100b] dark:shadow-[0_12px_34px_rgba(245,158,11,0.12)]"
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-yellow-300 via-amber-400 to-orange-500"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-amber-300/30 blur-3xl dark:bg-orange-400/15"
+                />
+
+                <div className="relative flex items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
+                  <div className="relative mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 text-slate-950 shadow-lg shadow-amber-500/25">
+                    <Megaphone className="h-5 w-5" strokeWidth={2.5} />
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center">
+                      <span className="absolute h-full w-full rounded-full bg-amber-500/70 motion-safe:animate-ping" />
+                      <span className="relative h-2.5 w-2.5 rounded-full border-2 border-amber-50 bg-emerald-400 dark:border-slate-900" />
                     </span>
                   </div>
 
-                  {/* Badge de Composição por Gênero para Vôlei */}
-                  {(match.sport_type === "volei" ||
-                    match.organization?.sport_type === "volei") &&
-                    (() => {
-                      const customGenderLimits = (
-                        match.teams_custom_config as any
-                      )?.gender_limits;
-                      const maxH =
-                        match.max_homens_por_time ??
-                        customGenderLimits?.max_homens_por_time;
-                      const maxM =
-                        match.max_mulheres_por_time ??
-                        customGenderLimits?.max_mulheres_por_time;
-                      if (
-                        maxH !== undefined &&
-                        maxM !== undefined &&
-                        (maxH > 0 || maxM > 0)
-                      ) {
-                        return (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] sm:text-xs font-black tracking-wider shadow-xs shrink-0">
-                            <span>
-                              ⚖️ ♂️ {maxH} Homens + ♀️ {maxM} Mulheres / time
-                            </span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                  {/* Badge de Modo de Sorteio (Apenas Admin) */}
-                  {isAdmin &&
-                    (match.sorteio_raspadinha_ativo ? (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs backdrop-blur-sm shrink-0">
-                        <Sparkles
-                          className="w-3.5 h-3.5 text-amber-500 animate-spin"
-                          style={{ animationDuration: "6s" }}
-                        />
-                        <span>Sorteio Raspadinha</span>
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 text-[11px] sm:text-xs font-black uppercase tracking-wider shrink-0">
-                        <Hand className="w-3.5 h-3.5 text-brand-500" />
-                        <span>Escolha Manual</span>
-                      </div>
-                    ))}
-
                   <div
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] sm:text-xs font-black uppercase tracking-wider shadow-xs shrink-0 ${
-                      isFull
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
-                        : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                    className={`min-w-0 flex-1 t-stagger ${
+                      isObservationShown ? "is-shown" : ""
                     }`}
                   >
-                    {!isFull ? (
-                      <>
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                        </span>
-                        <span>
-                          {remaining}{" "}
-                          {remaining === 1
-                            ? "vaga disponível"
-                            : "vagas disponíveis"}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
-                        <span>Partida Lotada</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Local / GPS Interativo no cabeçalho */}
-                  <div className="inline-flex items-center gap-2">
-                    <motion.a
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.95 }}
-                      href={mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group/gps inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 border border-slate-200/90 dark:border-slate-700/80 hover:border-emerald-500/40 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all duration-200 shadow-xs"
-                      title="Abrir localização no Google Maps / GPS"
+                    <span
+                      id="match-observation-title"
+                      className="t-stagger-line t-stagger-line--1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-800 dark:text-amber-300"
                     >
-                      <div className="flex items-center justify-center w-4 h-4 rounded-md bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 group-hover/gps:bg-emerald-500 group-hover/gps:text-white transition-colors duration-200">
-                        <MapPin className="w-2.5 h-2.5 shrink-0 group-hover/gps:scale-110 transition-transform duration-200" />
-                      </div>
-                      <span className="font-extrabold text-xs sm:text-sm tracking-tight">
-                        {match.local}
+                      Aviso da organização
+                      <span className="ml-2 inline-flex items-center rounded-full border border-amber-500/25 bg-amber-400/20 px-2 py-0.5 align-middle text-[9px] tracking-[0.1em] text-amber-800 dark:text-amber-200">
+                        Para todos
                       </span>
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/15 dark:bg-emerald-500/25 group-hover/gps:bg-emerald-500 group-hover/gps:text-white text-emerald-600 dark:text-emerald-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors duration-200">
-                        <Navigation className="w-2.5 h-2.5 shrink-0" />
-                        <span>GPS</span>
-                      </span>
-                    </motion.a>
-                    {match.endereco && (
-                      <span className="text-xs text-slate-400 font-medium">
-                        ({match.endereco})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* ═══ Bloco "COMO CHEGAR" com Animação de Brilho em Loop — exclusivo para JOGADORES ═══ */}
-              {isPlayer && (
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ scale: 1.02 }}
-                  type="button"
-                  animate={{
-                    boxShadow: [
-                      "0 0 6px rgba(16, 185, 129, 0.15), 0 0 14px rgba(16, 185, 129, 0.06)",
-                      "0 0 14px rgba(16, 185, 129, 0.4), 0 0 30px rgba(16, 185, 129, 0.12)",
-                      "0 0 6px rgba(16, 185, 129, 0.15), 0 0 14px rgba(16, 185, 129, 0.06)",
-                    ],
-                  }}
-                  transition={{
-                    boxShadow: {
-                      duration: 2.5,
-                      ease: "easeInOut",
-                      repeat: Infinity,
-                    },
-                  }}
-                  onClick={() => {
-                    window.open(mapUrl, "_blank");
-                  }}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 rounded-2xl bg-emerald-500/[0.07] dark:bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 transition-all duration-200 cursor-pointer group/nav mt-2"
-                  title="Abrir rota no Google Maps"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                      <MapPin className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <div className="min-w-0 text-left">
-                      <span className="block font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 truncate">
-                        {match.local}
-                      </span>
-                      {match.endereco && (
-                        <span className="block text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                          {match.endereco}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 shadow-md shadow-emerald-500/25 group-hover/nav:bg-emerald-600 transition-colors duration-200">
-                    <Navigation className="w-3 h-3 shrink-0" />
-                    <span>COMO CHEGAR</span>
-                  </div>
-                </motion.button>
-              )}
-            </div>
-          </div>
-
-          {/* Grade de Estatísticas e Detalhes da Partida (Modern Metrics Grid) */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                <Calendar className="w-3.5 h-3.5 text-brand-500 shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Data
-                </span>
-              </div>
-              <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                {formattedDate}
-              </span>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Horário
-                </span>
-              </div>
-              <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                {match.horario.substring(0, 5)}
-              </span>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Coleta
-                </span>
-              </div>
-              <span className="font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
-                {match.valor > 0 ? `R$ ${match.valor.toFixed(2)}` : "Grátis"}
-              </span>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                <Users className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Inscritos
-                </span>
-              </div>
-              <span className="font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                {participants.length} / {match.limite_participantes}
-              </span>
-            </div>
-
-            <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                <Shield className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Formação
-                </span>
-              </div>
-              <span className="font-extrabold text-xs text-brand-500 leading-tight">
-                {match.num_times} times × {match.jogadores_por_time} jog.
-              </span>
-            </div>
-          </div>
-
-          {/* ═══════════════════════════════════════════════════════════════════
-              DESTAQUES DA RODADA: CRAQUE DA PARTIDA (MVP) & ANINGA 🐍
-          ═══════════════════════════════════════════════════════════════════ */}
-          {(match.mvp_player || match.aninga_player || isAdmin) && (
-            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-xl space-y-3 relative overflow-hidden">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">⭐</span>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-black text-white leading-tight">
-                      Destaques da Rodada
-                    </h3>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Eleição oficial do Melhor e Pior em campo
+                    </span>
+                    <p className="t-stagger-line t-stagger-line--2 mt-2 text-[15px] font-extrabold leading-relaxed text-slate-900 dark:text-white sm:text-base">
+                      {match.observacoes}
                     </p>
                   </div>
                 </div>
+              </aside>
+            )}
 
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setIsHighlightsModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-                  >
-                    <Trophy className="w-3.5 h-3.5" />
-                    <span>{match.mvp_player || match.aninga_player ? "Alterar Destaques" : "Eleger Destaques"}</span>
-                  </button>
-                )}
-              </div>
-
-              {match.mvp_player || match.aninga_player ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {/* Card do Craque da Partida (MVP) */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-600/5 border border-amber-500/30 flex items-center gap-3.5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                      <Trophy className="w-16 h-16 text-amber-400" />
-                    </div>
-
-                    <div className="relative shrink-0">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 font-black text-sm overflow-hidden shadow-md shadow-amber-500/20">
-                        {match.mvp_player?.avatar_url ? (
-                          <img
-                            src={match.mvp_player.avatar_url}
-                            alt={match.mvp_player.nome}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          match.mvp_player?.nome?.charAt(0).toUpperCase() || "🏆"
-                        )}
-                      </div>
-                      <span className="absolute -top-1.5 -right-1.5 text-base">👑</span>
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                          🏆 Craque da Partida (MVP)
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-black text-white truncate">
-                        {match.mvp_player ? match.mvp_player.nome : "Ainda não definido"}
-                        {match.mvp_player?.apelido && (
-                          <span className="text-amber-300 font-bold ml-1 text-xs">
-                            ({match.mvp_player.apelido})
-                          </span>
-                        )}
-                      </h4>
-                      {match.mvp_notes && (
-                        <p className="text-[11px] text-amber-200/90 font-medium italic truncate mt-0.5">
-                          "{match.mvp_notes}"
-                        </p>
-                      )}
+            {/* DESTAQUES DA RODADA: CRAQUE DA PARTIDA (MVP) & ANINGA 🐍 */}
+            {(match.mvp_player || match.aninga_player || isAdmin) && (
+              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-lg space-y-3 relative overflow-hidden">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⭐</span>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-white leading-tight">
+                        Destaques da Rodada
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        Eleição oficial do Melhor e Pior em campo
+                      </p>
                     </div>
                   </div>
 
-                  {/* Card do ANINGA (Pior da Partida) */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-600/5 border border-emerald-500/30 flex items-center gap-3.5 relative overflow-hidden group">
-                    <div className="relative shrink-0">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 font-black text-sm overflow-hidden shadow-md shadow-emerald-500/20">
-                        {match.aninga_player?.avatar_url ? (
-                          <img
-                            src={match.aninga_player.avatar_url}
-                            alt={match.aninga_player.nome}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          match.aninga_player?.nome?.charAt(0).toUpperCase() || "🐍"
-                        )}
-                      </div>
-                      <span className="absolute -top-1.5 -right-1.5 text-base">🐍</span>
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                          🐍 ANINGA da Rodada
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-black text-white truncate">
-                        {match.aninga_player ? match.aninga_player.nome : "Ainda não definido"}
-                        {match.aninga_player?.apelido && (
-                          <span className="text-emerald-300 font-bold ml-1 text-xs">
-                            ({match.aninga_player.apelido})
-                          </span>
-                        )}
-                      </h4>
-                      {match.aninga_notes && (
-                        <p className="text-[11px] text-emerald-200/90 font-medium italic truncate mt-0.5">
-                          "{match.aninga_notes}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-dashed border-slate-800 text-center space-y-2">
-                  <p className="text-xs text-slate-400 font-medium">
-                    O organizador ainda não elegeu o <strong>Craque da Partida 🏆</strong> e o <strong>ANINGA 🐍</strong> desta rodada.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Configuração dos Times (Apenas Administrador) */}
-          {isAdmin && (
-            <div className="p-3.5 bg-gradient-to-r from-brand-500/5 via-amber-500/5 to-purple-500/5 border border-brand-500/15 rounded-2xl">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-brand-500" />
-                <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-                  Configuração dos Times
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: match.num_times }).map((_, i) => {
-                  const teamPlayers = teamGroups[i + 1]?.length || 0;
-                  const teamConf = getTeamInfo(match, i + 1);
-                  return (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${teamConf.border} bg-white/80 dark:bg-slate-800/80 shadow-xs`}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsHighlightsModalOpen(true)}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                     >
-                      <TeamBadge
-                        teamInfo={teamConf}
-                        size="2xs"
-                        rounded="md"
-                        showBorder={false}
-                        onClick={(e) => {
-                          if (teamConf.badge_url) {
-                            e.stopPropagation();
-                            openImagePreview({
-                              imageUrl: teamConf.badge_url,
-                              title: teamConf.name,
-                              subtitle: `Emblema Oficial • ${match.titulo || "Partida"}`,
-                              type: "team_badge",
-                              badge: "Emblema Oficial",
-                            });
-                          }
-                        }}
-                      />
-                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                        {teamConf.name}
-                      </span>
-                      <span
-                        className={`text-[10px] font-extrabold ${teamPlayers >= match.jogadores_por_time ? "text-emerald-500" : "text-slate-400"}`}
-                      >
-                        {teamPlayers}/{match.jogadores_por_time}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Observações */}
-          {match.observacoes && (
-            <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-700 dark:text-slate-300">
-                <span className="font-black text-amber-600 dark:text-amber-400 block mb-0.5">
-                  Observações da Organização:
-                </span>
-                <p className="leading-relaxed font-medium">
-                  {match.observacoes}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* BANNER DE RASPADINHA PARA O PARTICIPANTE INSCRITO */}
-          {isJoined && currentParticipant && match.sorteio_raspadinha_ativo && (
-            <div
-              className={`p-4 sm:p-5 rounded-2xl space-y-2 text-center animate-in fade-in duration-300 border ${
-                currentParticipant.team != null
-                  ? "bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/30"
-                  : "bg-gradient-to-r from-amber-500/20 via-brand-500/20 to-purple-500/20 border-amber-400/40"
-              }`}
-            >
-              <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold text-xs ${
-                  currentParticipant.team != null
-                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                    : "bg-amber-500/20 text-amber-500 dark:text-amber-400"
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>
-                  {currentParticipant.team != null
-                    ? "🔒 Sorteio da Raspadinha Concluído"
-                    : "🎰 Raspadinha da Sorte Ativada!"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-                {currentParticipant.team != null &&
-                  (() => {
-                    const teamNum = currentParticipant.team;
-                    const tInfo = getTeamInfo(match, teamNum);
-                    return (
-                      <TeamBadge
-                        teamInfo={tInfo}
-                        size="sm"
-                        rounded="xl"
-                        onClick={(e) => {
-                          if (tInfo.badge_url) {
-                            e.stopPropagation();
-                            openImagePreview({
-                              imageUrl: tInfo.badge_url,
-                              title: tInfo.name,
-                              subtitle: `Seu Time Oficial • ${match.titulo || "Partida"}`,
-                              type: "team_badge",
-                              badge: "Seu Time",
-                            });
-                          }
-                        }}
-                      />
-                    );
-                  })()}
-                <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
-                  {currentParticipant.team != null
-                    ? `Seu Time Oficial: ${getTeamInfo(match, currentParticipant.team).name}`
-                    : "Você ainda não possui um time nesta partida!"}
-                </h3>
-              </div>
-
-              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed font-medium">
-                {currentParticipant.team != null
-                  ? "Seu sorteio por raspadinha já foi registrado e vinculado permanentemente no banco de dados para esta partida."
-                  : "Clique no botão abaixo para abrir sua raspadinha individual e descobrir o seu time."}
-              </p>
-
-              {/* Botão de Abrir Raspadinha exibido APENAS se team for NULL e partida não encerrada */}
-              {!isEnded && currentParticipant.team == null && (
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={{ scale: 1.03 }}
-                  onClick={() => setIsScratchCardOpen(true)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-brand-500 hover:from-amber-600 hover:to-brand-600 text-white font-black rounded-xl text-xs shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-2 mx-auto mt-2 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Abrir Minha Raspadinha Virtual</span>
-                </motion.button>
-              )}
-            </div>
-          )}
-
-          {/* CARD DE STATUS DE PAGAMENTO PIX PARA INSCRITO */}
-          {isJoined && currentParticipant && match.valor > 0 && (
-            <div
-              className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${
-                currentParticipant.paid
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-                  : "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    currentParticipant.paid
-                      ? "bg-emerald-500/20"
-                      : "bg-amber-500/20"
-                  }`}
-                >
-                  {currentParticipant.paid ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  ) : (
-                    <QrCode className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>{match.mvp_player || match.aninga_player ? "Alterar Destaques" : "Eleger Destaques"}</span>
+                    </button>
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-black text-xs block">
-                    {currentParticipant.paid
-                      ? "Pagamento Confirmado! ✅"
-                      : isEnded
-                        ? "Partida Encerrada"
-                        : "Pagamento da Inscrição Pendente ⏳"}
-                  </span>
-                  <span className="text-[11px] opacity-80 block font-medium">
-                    {currentParticipant.paid
-                      ? `Sua taxa de R$ ${match.valor.toFixed(2)} já foi baixada no sistema.`
-                      : isEnded
-                        ? "O evento já foi realizado."
-                        : `Realize o pagamento de R$ ${match.valor.toFixed(2)} via PIX para garantir sua vaga.`}
-                  </span>
-                </div>
-              </div>
 
-              {!isEnded && !currentParticipant.paid && (
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsPixModalOpen(true)}
-                  className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl shadow-xs transition-all shrink-0 flex items-center justify-center gap-1.5"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Pagar R$ {match.valor.toFixed(2)} via PIX</span>
-                </motion.button>
-              )}
-            </div>
-          )}
+                {match.mvp_player || match.aninga_player ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Card do Craque da Partida (MVP) */}
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-600/5 border border-amber-500/30 flex items-center gap-3.5 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <Trophy className="w-16 h-16 text-amber-400" />
+                      </div>
 
-          {/* Botão Principal de Inscrição exibido apenas em partidas abertas */}
-          {!isEnded && (
-            <div className="pt-1">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={handleToggleJoin}
-                disabled={!isJoined && isFull}
-                className={`w-full py-3.5 rounded-2xl font-black text-sm transition-all shadow-lg flex items-center justify-center gap-2 ${
-                  isJoined
-                    ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/25"
-                    : isFull
-                      ? "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                      : "bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/30"
-                }`}
-              >
-                {isJoined ? (
-                  <>
-                    <XCircle className="w-5 h-5" />
-                    <span>Cancelar Minha Participação</span>
-                  </>
-                ) : isFull ? (
-                  <span>Partida Lotada (Sem vagas disponíveis)</span>
+                      <div className="relative shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 font-black text-sm overflow-hidden shadow-md shadow-amber-500/20">
+                          {match.mvp_player?.avatar_url ? (
+                            <img
+                              src={match.mvp_player.avatar_url}
+                              alt={match.mvp_player.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            match.mvp_player?.nome?.charAt(0).toUpperCase() || "🏆"
+                          )}
+                        </div>
+                        <span className="absolute -top-1.5 -right-1.5 text-base">👑</span>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                            🏆 Craque da Partida (MVP)
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black text-white truncate">
+                          {match.mvp_player ? match.mvp_player.nome : "Ainda não definido"}
+                          {match.mvp_player?.apelido && (
+                            <span className="text-amber-300 font-bold ml-1 text-xs">
+                              ({match.mvp_player.apelido})
+                            </span>
+                          )}
+                        </h4>
+                        {match.mvp_notes && (
+                          <p className="text-[11px] text-amber-200/90 font-medium italic truncate mt-0.5">
+                            "{match.mvp_notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card do ANINGA (Pior da Partida) */}
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-600/5 border border-emerald-500/30 flex items-center gap-3.5 relative overflow-hidden group">
+                      <div className="relative shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 font-black text-sm overflow-hidden shadow-md shadow-emerald-500/20">
+                          {match.aninga_player?.avatar_url ? (
+                            <img
+                              src={match.aninga_player.avatar_url}
+                              alt={match.aninga_player.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            match.aninga_player?.nome?.charAt(0).toUpperCase() || "🐍"
+                          )}
+                        </div>
+                        <span className="absolute -top-1.5 -right-1.5 text-base">🐍</span>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                            🐍 ANINGA da Rodada
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black text-white truncate">
+                          {match.aninga_player ? match.aninga_player.nome : "Ainda não definido"}
+                          {match.aninga_player?.apelido && (
+                            <span className="text-emerald-300 font-bold ml-1 text-xs">
+                              ({match.aninga_player.apelido})
+                            </span>
+                          )}
+                        </h4>
+                        {match.aninga_notes && (
+                          <p className="text-[11px] text-emerald-200/90 font-medium italic truncate mt-0.5">
+                            "{match.aninga_notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Quero Participar! Garanta Minha Vaga</span>
-                  </>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-dashed border-slate-800 text-center space-y-2">
+                    <p className="text-xs text-slate-400 font-medium">
+                      O organizador ainda não elegeu o <strong>Craque da Partida 🏆</strong> e o <strong>ANINGA 🐍</strong> desta rodada.
+                    </p>
+                  </div>
                 )}
-              </motion.button>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </section>
 
-        {/* Alternador de Abas da Partida */}
-        <div className="flex items-center justify-center w-full overflow-x-auto scrollbar-none py-1">
-          <div className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1.5 shrink-0 max-w-full overflow-x-auto scrollbar-none">
-            <motion.button
-              whileTap={{ scale: 0.94 }}
-              onClick={() => {
-                if (typeof window !== "undefined" && "vibrate" in navigator) {
-                  navigator.vibrate(10);
-                }
-                setMatchTab("info");
-              }}
-              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
-                matchTab === "info"
-                  ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Times & Presença</span>
-            </motion.button>
-
-            {isPlayer ? (
+          {/* ═══════════════════════════════════════════════════════════════════
+              4. ÁREA DE NAVEGAÇÃO ENTRE ABAS (MOBILE FIRST TABS)
+          ═══════════════════════════════════════════════════════════════════ */}
+          <nav
+            aria-label="Navegação da partida"
+            className="lg:col-span-12 w-full flex justify-center py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl border-y border-slate-200/70 dark:border-slate-800/70 sm:border sm:rounded-2xl sm:shadow-sm"
+          >
+            <div className="mx-auto p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs flex items-center justify-between gap-1 w-full max-w-[520px]">
+              {/* Aba 1: Times & Presença */}
               <motion.button
                 whileTap={{ scale: 0.94 }}
+                type="button"
+                aria-pressed={matchTab === "info"}
                 onClick={() => {
                   if (typeof window !== "undefined" && "vibrate" in navigator) {
                     navigator.vibrate(10);
                   }
-                  setIsFinanceModalOpen(true);
+                  setMatchTab("info");
                 }}
-                className="px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 cursor-pointer shadow-xs"
-                title="Visualizar prestação de contas, transparência e pagamentos da partida"
+                className={`px-2 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex flex-1 items-center justify-center gap-1.5 min-w-0 min-h-[46px] touch-manipulation cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset ${
+                  matchTab === "info"
+                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
               >
-                <Receipt className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Resumo Financeiro</span>
+                <Users className="w-3.5 h-3.5" />
+                <span className="sm:hidden">Times</span>
+                <span className="hidden sm:inline">Times & Presença</span>
               </motion.button>
-            ) : (
+
+              {/* Aba 2: Placar ao Vivo */}
               <motion.button
                 whileTap={{ scale: 0.94 }}
+                type="button"
+                aria-pressed={matchTab === "scoreboard"}
                 onClick={() => {
                   if (typeof window !== "undefined" && "vibrate" in navigator) {
                     navigator.vibrate(10);
                   }
                   setMatchTab("scoreboard");
                 }}
-                className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
+                className={`px-2 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex flex-1 items-center justify-center gap-1.5 min-w-0 min-h-[46px] touch-manipulation cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset ${
                   matchTab === "scoreboard"
                     ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <Flame className="w-3.5 h-3.5" />
-                <span>🏟️ Placar ao Vivo</span>
+                <span className="sm:hidden">Ao vivo</span>
+                <span className="hidden sm:inline">🏟️ Placar ao Vivo</span>
               </motion.button>
-            )}
 
-            <motion.button
-              whileTap={{ scale: 0.94 }}
-              onClick={() => {
-                if (typeof window !== "undefined" && "vibrate" in navigator) {
-                  navigator.vibrate(10);
-                }
-                setMatchTab("standings");
-              }}
-              className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 shrink-0 min-h-[44px] touch-manipulation cursor-pointer ${
-                matchTab === "standings"
-                  ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>Classificação</span>
-            </motion.button>
-          </div>
-        </div>
+              {/* Aba 3: Classificação */}
+              <motion.button
+                whileTap={{ scale: 0.94 }}
+                type="button"
+                aria-pressed={matchTab === "standings"}
+                onClick={() => {
+                  if (typeof window !== "undefined" && "vibrate" in navigator) {
+                    navigator.vibrate(10);
+                  }
+                  setMatchTab("standings");
+                }}
+                className={`px-2 sm:px-5 py-2.5 rounded-xl font-black text-xs transition-all flex flex-1 items-center justify-center gap-1.5 min-w-0 min-h-[46px] touch-manipulation cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-inset ${
+                  matchTab === "standings"
+                    ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span className="sm:hidden">Tabela</span>
+                <span className="hidden sm:inline">Classificação</span>
+              </motion.button>
+            </div>
+          </nav>
 
-        {/* ABA: PLACAR AO VIVO */}
-        {matchTab === "scoreboard" && (
-          <LiveScoreboard
-            match={match}
-            participants={participants}
-            onGameFinished={() => fetchMatchDetails()}
-          />
-        )}
+          {/* ═══════════════════════════════════════════════════════════════════
+              5. CONTEÚDO DAS ABAS
+          ═══════════════════════════════════════════════════════════════════ */}
+          {/* ABA: PLACAR AO VIVO */}
+          {matchTab === "scoreboard" && (
+            <div className="lg:col-span-12">
+              <LiveScoreboard
+                match={match}
+                participants={participants}
+                onGameFinished={() => fetchMatchDetails()}
+              />
+            </div>
+          )}
 
-        {/* ABA: CLASSIFICAÇÃO AUTOMÁTICA */}
-        {matchTab === "standings" && (
-          <StandingsTable
-            matchId={match.id}
-            leagueId={match.organization_id}
-            sportType={match.sport_type}
-            numTeams={match.num_times}
-            showTopScorers={true}
-          />
-        )}
+          {/* ABA: CLASSIFICAÇÃO AUTOMÁTICA */}
+          {matchTab === "standings" && (
+            <div className="lg:col-span-12">
+              <StandingsTable
+                matchId={match.id}
+                leagueId={match.organization_id}
+                sportType={match.sport_type}
+                numTeams={match.num_times}
+                showTopScorers={true}
+              />
+            </div>
+          )}
 
-        {/* ABA: INFORMAÇÕES, TIMES E PRESENÇA */}
-        {matchTab === "info" && (
-          <>
-            {/* Painel do Administrador - Gerenciamento e Ativação do Sorteio por Raspadinha */}
-            {isAdmin && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-brand-500 shrink-0" />
-                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                      Gerenciamento de Partida & Times (Admin)
-                    </h3>
-                  </div>
+          {/* ABA: TIMES & PRESENÇA */}
+          {matchTab === "info" && (
+            <div className="lg:col-span-12 space-y-4 sm:space-y-5">
+              {/* 5.1 ÁREA ADMINISTRATIVA (Apenas Administrador / Organizador) */}
+              {isAdmin && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-brand-500 shrink-0" />
+                      <div>
+                        <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                          Gerenciamento da Partida & Times (Admin)
+                        </h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Controles operacionais e distribuição de equipes
+                        </p>
+                      </div>
+                    </div>
 
-                  {/* Toggle Sorteio via Raspadinha */}
-                  <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      Sorteio por Raspadinha
-                    </span>
-                    <button
-                      onClick={handleToggleScratchMode}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        match.sorteio_raspadinha_ativo
-                          ? "bg-amber-500"
-                          : "bg-slate-300 dark:bg-slate-600"
-                      }`}
-                      title="Ativar/Desativar Raspadinha Virtual"
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          match.sorteio_raspadinha_ativo
-                            ? "translate-x-4"
-                            : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                {participants.length > 0 && (
-                  <div className="flex flex-col sm:flex-row flex-wrap gap-2">
-                    <button
-                      onClick={promptSortTeams}
-                      disabled={isSorting}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-xs shadow-brand-500/20 flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-                    >
-                      <Shuffle className="w-4 h-4" />
-                      <span>
-                        {isSorting
-                          ? "Sorteando..."
-                          : hasTeamsAssigned
-                            ? "Ressortear Todos os Times"
-                            : "Sortear Times Automaticamente"}
+                    {/* Toggle Sorteio via Raspadinha */}
+                    <div className="flex items-center justify-between sm:justify-end gap-2.5 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Sorteio por Raspadinha
                       </span>
-                    </button>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={match.sorteio_raspadinha_ativo}
+                        onClick={handleToggleScratchMode}
+                        className={`relative inline-flex h-9 w-[60px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
+                          match.sorteio_raspadinha_ativo
+                            ? "bg-amber-500"
+                            : "bg-slate-300 dark:bg-slate-600"
+                        }`}
+                        title="Ativar/Desativar Raspadinha Virtual"
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-8 w-8 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            match.sorteio_raspadinha_ativo
+                              ? "translate-x-5"
+                              : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
 
+                  {/* Ações Administrativas de Times */}
+                  <div className="grid grid-cols-2 items-stretch gap-2 sm:flex sm:flex-wrap">
                     <Link
                       href={`/matches/${match.id}/control`}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-brand-600 hover:from-emerald-500 hover:to-brand-500 text-white font-black text-xs rounded-xl shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-brand-600 hover:from-emerald-500 hover:to-brand-500 text-white font-black text-xs leading-tight text-center rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      title="Mesa de controle da arbitragem ao vivo"
                     >
-                      <Radio className="w-4 h-4" />
-                      <span>Mesa de Controle ao Vivo 🎛️</span>
+                      <Radio className="w-3.5 h-3.5" />
+                      <span>Mesa de Controle ao Vivo</span>
                     </Link>
 
+                    {participants.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={promptSortTeams}
+                        disabled={isSorting}
+                        className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs leading-tight text-center rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        <Shuffle className="w-3.5 h-3.5" />
+                        <span>
+                          {isSorting
+                            ? "Sorteando..."
+                            : hasTeamsAssigned
+                              ? "Ressortear Times"
+                              : "Sortear Automaticamente"}
+                        </span>
+                      </button>
+                    )}
+
                     <button
+                      type="button"
                       onClick={() => setIsEditTeamsOpen(true)}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-xs shadow-purple-600/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs leading-tight text-center rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
-                      <Palette className="w-4 h-4" />
+                      <Palette className="w-3.5 h-3.5 text-brand-500" />
                       <span>Personalizar Times & Cores</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPlayerManagerOpen(true)}
+                      className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs leading-tight text-center rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      title="Adicionar jogadores manualmente"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>+ Adicionar Jogador</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsEditMatchOpen(true)}
+                      className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-3.5 py-2 sm:py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold leading-tight text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Editar Partida</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsWhatsAppModalOpen(true)}
+                      className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold leading-tight text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Avisar no WhatsApp</span>
                     </button>
 
                     {hasTeamsAssigned && (
                       <button
+                        type="button"
                         onClick={promptClearTeams}
                         disabled={isSorting}
-                        className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        className="w-full sm:w-auto min-h-16 sm:min-h-[44px] px-3 sm:px-4 py-2 sm:py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs leading-tight text-center rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 border border-rose-500/25 cursor-pointer"
                       >
-                        <XCircle className="w-4 h-4 text-slate-400" />
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" />
                         <span>Desfazer Times</span>
                       </button>
                     )}
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Barra de Exportação em PDF da Escalação Oficial (Apenas Administrador) */}
-            {isAdmin && (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-xs">
-                    <FileDown className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">
-                      Escalação Oficial & Vagas dos Times
-                    </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {participants.length} jogador
-                      {participants.length !== 1 ? "es" : ""} confirmado
-                      {participants.length !== 1 ? "s" : ""} • {match.num_times}{" "}
-                      times configurados
-                    </p>
+                  {/* Exportação em PDF da Escalação Oficial */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <FileDown className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-xs text-slate-900 dark:text-white">
+                          Escalação Oficial & Vagas
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {participants.length} confirmado{participants.length !== 1 ? "s" : ""} • {match.num_times} times configurados
+                        </p>
+                      </div>
+                    </div>
+
+                    <motion.button
+                      whileTap={{ scale: 0.94 }}
+                      onClick={handleDownloadPdf}
+                      disabled={isGeneratingPdf}
+                      className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-60"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      <span>{isGeneratingPdf ? "Gerando Documento..." : "Gerar PDF dos Times"}</span>
+                    </motion.button>
                   </div>
                 </div>
+              )}
 
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={handleDownloadPdf}
-                  disabled={isGeneratingPdf}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60"
-                >
-                  <FileDown className="w-4 h-4" />
-                  <span>
-                    {isGeneratingPdf
-                      ? "Gerando Documento..."
-                      : "Gerar PDF dos Times"}
-                  </span>
-                </motion.button>
-              </div>
-            )}
+              {/* 5.2 TIMES ORGANIZADOS (Acordeão Moderno com Emblemas em Destaque) */}
+              {hasTeamsAssigned && (
+                <div className="space-y-3.5">
+                  {/* Barra de Ações Rápidas do Acordeão */}
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-brand-500" />
+                      <span>Times Escalados ({match.num_times})</span>
+                    </span>
 
-            {/* Times Organizados (Formato Acordeão Moderno com Emblemas em Destaque) */}
-            {hasTeamsAssigned && (
-              <div className="space-y-4">
-                {/* Barra de Ações Rápidas do Acordeão */}
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-brand-500" />
-                    <span>Times Escalados ({match.num_times})</span>
-                  </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleExpandAllTeams}
+                        className="min-h-9 px-2 text-[11px] font-bold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
+                      >
+                        Expandir Todos
+                      </button>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
+                      <button
+                        type="button"
+                        onClick={handleCollapseAllTeams}
+                        className="min-h-9 px-2 text-[11px] font-bold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
+                      >
+                        Recolher Todos
+                      </button>
+                    </div>
+                  </div>
 
-                  <div className="flex items-center gap-2">
+                  {/* Abas Rápidas de Navegação entre Times no Mobile */}
+                  <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
                     <button
                       type="button"
                       onClick={handleExpandAllTeams}
-                      className="text-[11px] font-bold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
+                      className={`px-3 min-h-10 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
+                        expandedTeams.length === match.num_times
+                          ? 'bg-brand-500 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
                     >
-                      Expandir Todos
+                      Todos ({participants.length})
                     </button>
-                    <span className="text-slate-300 dark:text-slate-700">
-                      •
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleCollapseAllTeams}
-                      className="text-[11px] font-bold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
-                    >
-                      Recolher Todos
-                    </button>
-                  </div>
-                </div>
-
-                {/* Abas Rápidas de Navegação entre Times no Mobile */}
-                <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
-                  <button
-                    type="button"
-                    onClick={handleExpandAllTeams}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
-                      expandedTeams.length === match.num_times
-                        ? 'bg-brand-500 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    Todos ({participants.length})
-                  </button>
-                  {Array.from({ length: match.num_times }).map((_, idx) => {
-                    const tNum = idx + 1;
-                    const tConf = getTeamInfo(match, tNum);
-                    const tCount = teamGroups[tNum]?.length || 0;
-                    const isSelected = expandedTeams.length === 1 && expandedTeams[0] === tNum;
-                    return (
-                      <button
-                        key={tNum}
-                        type="button"
-                        onClick={() => setExpandedTeams([tNum])}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
-                          isSelected
-                            ? `${tConf.border} bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs`
-                            : 'border-transparent bg-slate-100 dark:bg-slate-800/60 text-slate-500'
-                        }`}
-                      >
-                        <span>{tConf.emoji || '⚽'}</span>
-                        <span>{tConf.name}</span>
-                        <span className="text-[10px] opacity-75 font-bold">({tCount})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-                  {Array.from({ length: match.num_times }).map((_, teamIdx) => {
-                    const teamNum = teamIdx + 1;
-                    const teamConfig = getTeamInfo(match, teamNum);
-                    const teamPlayers = teamGroups[teamNum] || [];
-                    const isMyTeam = currentParticipant?.team === teamNum;
-                    const isTeamFull =
-                      teamPlayers.length >= match.jogadores_por_time;
-                    const isExpanded = expandedTeams.includes(teamNum);
-
-                    return (
-                      <div
-                        key={teamNum}
-                        className={`bg-white dark:bg-slate-900 border-2 ${teamConfig.border} rounded-3xl shadow-xs relative overflow-hidden transition-all duration-200`}
-                      >
-                        {/* Barra de cor do time */}
-                        <div
-                          className={`absolute top-0 left-0 right-0 h-1.5 ${teamConfig.color}`}
-                        />
-
-                        {/* Cabeçalho do Acordeão: Emblema em Destaque + Nome + Chevron */}
+                    {Array.from({ length: match.num_times }).map((_, idx) => {
+                      const tNum = idx + 1;
+                      const tConf = getTeamInfo(match, tNum);
+                      const tCount = teamGroups[tNum]?.length || 0;
+                      const isSelected = expandedTeams.length === 1 && expandedTeams[0] === tNum;
+                      return (
                         <button
+                          key={tNum}
                           type="button"
-                          onClick={() => toggleTeamAccordion(teamNum)}
-                          className="w-full p-4 sm:p-5 pt-4 sm:pt-5 text-left flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors select-none focus:outline-none"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            {/* Emblema do Time em Destaque (Toque para Ampliar) */}
-                            <TeamBadge
-                              teamInfo={teamConfig}
-                              size="md"
-                              rounded="2xl"
-                              className="shadow-md shrink-0"
-                              onClick={(e) => {
-                                if (teamConfig.badge_url) {
-                                  e.stopPropagation();
-                                  openImagePreview({
-                                    imageUrl: teamConfig.badge_url,
-                                    title: teamConfig.name,
-                                    subtitle: `Emblema Oficial • ${match.titulo || "Partida"}`,
-                                    type: "team_badge",
-                                    badge: `${teamPlayers.length}/${match.jogadores_por_time} Jogadores`,
-                                  });
-                                }
-                              }}
-                            />
-
-                            <div className="min-w-0">
-                              <h3
-                                className={`font-black text-sm sm:text-base ${teamConfig.text} truncate leading-tight`}
-                              >
-                                {teamConfig.name}
-                              </h3>
-                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                <span
-                                  className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
-                                    isTeamFull
-                                      ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-                                      : `${teamConfig.lightBg} ${teamConfig.text}`
-                                  }`}
-                                >
-                                  {teamPlayers.length}/
-                                  {match.jogadores_por_time} jogadores
-                                </span>
-                                {(match.sport_type === "volei" ||
-                                  match.organization?.sport_type ===
-                                    "volei") && (
-                                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
-                                    ♂️{" "}
-                                    {
-                                      teamPlayers.filter(
-                                        (p) => p.user?.genero !== "feminino",
-                                      ).length
-                                    }{" "}
-                                    · ♀️{" "}
-                                    {
-                                      teamPlayers.filter(
-                                        (p) => p.user?.genero === "feminino",
-                                      ).length
-                                    }
-                                  </span>
-                                )}
-                                {isMyTeam && (
-                                  <span className="text-[10px] font-black uppercase bg-brand-500/15 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded-full border border-brand-500/25">
-                                    Seu Time
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Botão de Expansão com Chevron Animado */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[11px] font-bold text-slate-400 hidden sm:inline">
-                              {isExpanded ? "Recolher" : "Ver Jogadores"}
-                            </span>
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 transition-transform duration-300 ${
-                                isExpanded
-                                  ? "rotate-180 bg-brand-500/15 text-brand-600 dark:text-brand-400"
-                                  : ""
-                              }`}
-                            >
-                              <ChevronDown className="w-4 h-4" />
-                            </div>
-                          </div>
-                        </button>
-
-                        {/* Conteúdo Animado do Acordeão (Lista de Jogadores) */}
-                        <AnimatePresence initial={false}>
-                          {isExpanded && (
-                            <motion.div
-                              key={`team-content-${teamNum}`}
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
-                                {teamPlayers.length === 0 ? (
-                                  <p className="text-xs text-slate-400 text-center py-4 italic">
-                                    Nenhum jogador escalado neste time ainda.
-                                  </p>
-                                ) : (
-                                  <div className="space-y-1.5 pt-1">
-                                    {teamPlayers.map((p, idx) =>
-                                      renderParticipantRow(p, idx, teamConfig),
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* BOTÃO DE ESCOLHA MANUAL PELO JOGADOR (QUANDO RASPADINHA DESATIVADA) */}
-                                {isJoined &&
-                                  currentParticipant &&
-                                  !match.sorteio_raspadinha_ativo && (
-                                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                      <button
-                                        onClick={() =>
-                                          handleSelectTeamManual(teamNum)
-                                        }
-                                        disabled={!isMyTeam && isTeamFull}
-                                        className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                          isMyTeam
-                                            ? "bg-red-500 hover:bg-red-600 text-white shadow-md"
-                                            : isTeamFull
-                                              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                                              : "bg-brand-500 hover:bg-brand-600 text-white shadow-md hover:scale-[1.01]"
-                                        }`}
-                                      >
-                                        {isMyTeam ? (
-                                          <span>Sair do {teamConfig.name}</span>
-                                        ) : isTeamFull ? (
-                                          <span>Time Lotado</span>
-                                        ) : (
-                                          <span>
-                                            Entrar no {teamConfig.name}
-                                          </span>
-                                        )}
-                                      </button>
-                                    </div>
-                                  )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Reservas / Suplentes (Acordeão) */}
-                {reserves.length > 0 && (
-                  <div className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-3xl shadow-xs overflow-hidden transition-all duration-200">
-                    <button
-                      type="button"
-                      onClick={() => setIsReservesExpanded(!isReservesExpanded)}
-                      className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors select-none focus:outline-none"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0 shadow-xs">
-                          <UserPlus className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-extrabold text-sm sm:text-base text-amber-600 dark:text-amber-400">
-                            Reservas / Suplentes
-                          </h3>
-                          <span className="text-xs font-bold text-slate-400 block mt-0.5">
-                            {reserves.length} jogador
-                            {reserves.length > 1 ? "es" : ""} aguardando vaga
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-bold text-slate-400 hidden sm:inline">
-                          {isReservesExpanded ? "Recolher" : "Ver Reservas"}
-                        </span>
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${
-                            isReservesExpanded ? "rotate-180" : ""
+                          onClick={() => setExpandedTeams([tNum])}
+                          className={`px-3 min-h-10 rounded-xl text-xs font-black shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
+                            isSelected
+                              ? `${tConf.border} bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs`
+                              : 'border-transparent bg-slate-100 dark:bg-slate-800/60 text-slate-500'
                           }`}
                         >
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                      {isReservesExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25, ease: "easeInOut" }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-amber-200/60 dark:border-amber-900/60 space-y-1.5">
-                            {reserves.map((p, idx) =>
-                              renderParticipantRow(p, idx),
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          <span>{tConf.emoji || '⚽'}</span>
+                          <span>{tConf.name}</span>
+                          <span className="text-[10px] opacity-75 font-bold">({tCount})</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Lista Simples (quando não há times sorteados ainda) */}
-            {!hasTeamsAssigned && (
-              <div className="space-y-4">
-                {/* Opção de Escolha Manual nos cards de times quando desativada raspadinha */}
-                {!match.sorteio_raspadinha_ativo && isJoined && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {Array.from({ length: match.num_times }).map(
-                      (_, teamIdx) => {
-                        const teamNum = teamIdx + 1;
-                        const teamConfig = getTeamInfo(match, teamNum);
-                        const teamPlayers = teamGroups[teamNum] || [];
-                        const isMyTeam = currentParticipant?.team === teamNum;
-                        const isTeamFull =
-                          teamPlayers.length >= match.jogadores_por_time;
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+                    {Array.from({ length: match.num_times }).map((_, teamIdx) => {
+                      const teamNum = teamIdx + 1;
+                      const teamConfig = getTeamInfo(match, teamNum);
+                      const teamPlayers = teamGroups[teamNum] || [];
+                      const isMyTeam = currentParticipant?.team === teamNum;
+                      const isTeamFull =
+                        teamPlayers.length >= match.jogadores_por_time;
+                      const isExpanded = expandedTeams.includes(teamNum);
 
-                        return (
+                      return (
+                        <div
+                          key={teamNum}
+                          className={`bg-white dark:bg-slate-900/90 border-2 ${teamConfig.border} rounded-2xl sm:rounded-3xl shadow-xs relative overflow-hidden transition-all duration-200`}
+                        >
+                          {/* Barra de cor do time */}
                           <div
-                            key={teamNum}
-                            className={`p-4 rounded-2xl border ${teamConfig.border} bg-white dark:bg-slate-900 flex items-center justify-between gap-2`}
+                            className={`absolute top-0 left-0 right-0 h-1.5 ${teamConfig.color}`}
+                          />
+
+                          {/* Cabeçalho do Acordeão: Emblema em Destaque + Nome + Chevron */}
+                          <button
+                            type="button"
+                            onClick={() => toggleTeamAccordion(teamNum)}
+                            aria-expanded={isExpanded}
+                            className="w-full min-h-[72px] p-4 sm:p-5 pt-4 sm:pt-5 text-left flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset"
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-3.5 min-w-0">
                               <TeamBadge
                                 teamInfo={teamConfig}
-                                size="sm"
-                                rounded="xl"
+                                size="md"
+                                rounded="2xl"
+                                className="shadow-xs shrink-0"
                                 onClick={(e) => {
                                   if (teamConfig.badge_url) {
                                     e.stopPropagation();
                                     openImagePreview({
                                       imageUrl: teamConfig.badge_url,
                                       title: teamConfig.name,
-                                      subtitle: "Emblema Oficial",
+                                      subtitle: `Emblema Oficial • ${match.titulo || "Partida"}`,
                                       type: "team_badge",
+                                      badge: `${teamPlayers.length}/${match.jogadores_por_time} Jogadores`,
                                     });
                                   }
                                 }}
                               />
+
                               <div className="min-w-0">
-                                <span
-                                  className={`font-extrabold text-xs block ${teamConfig.text} truncate`}
+                                <h3
+                                  className={`font-black text-sm sm:text-base ${teamConfig.text} truncate leading-tight`}
                                 >
                                   {teamConfig.name}
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {teamPlayers.length}/
-                                  {match.jogadores_por_time} jogadores
-                                </span>
+                                </h3>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span
+                                    className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
+                                      isTeamFull
+                                        ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+                                        : `${teamConfig.lightBg} ${teamConfig.text}`
+                                    }`}
+                                  >
+                                    {teamPlayers.length}/
+                                    {match.jogadores_por_time} jogadores
+                                  </span>
+                                  {isMatchVolei && (
+                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                                      ♂️{" "}
+                                      {
+                                        teamPlayers.filter(
+                                          (p) => p.user?.genero !== "feminino",
+                                        ).length
+                                      }{" "}
+                                      · ♀️{" "}
+                                      {
+                                        teamPlayers.filter(
+                                          (p) => p.user?.genero === "feminino",
+                                        ).length
+                                      }
+                                    </span>
+                                  )}
+                                  {isMyTeam && (
+                                    <span className="text-[10px] font-black uppercase bg-brand-500/15 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded-full border border-brand-500/25">
+                                      Seu Time
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
-                            <button
-                              onClick={() => handleSelectTeamManual(teamNum)}
-                              disabled={!isMyTeam && isTeamFull}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                                isMyTeam
-                                  ? "bg-red-500 text-white"
-                                  : isTeamFull
-                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                                    : "bg-brand-500 text-white hover:scale-105"
-                              }`}
-                            >
-                              {isMyTeam
-                                ? "Sair"
-                                : isTeamFull
-                                  ? "Lotado"
-                                  : "Escolher"}
-                            </button>
-                          </div>
-                        );
-                      },
-                    )}
-                  </div>
-                )}
+                            {/* Botão de Expansão com Chevron Animado */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[11px] font-bold text-slate-400 hidden sm:inline">
+                                {isExpanded ? "Recolher" : "Ver Jogadores"}
+                              </span>
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 transition-transform duration-300 ${
+                                  isExpanded
+                                    ? "rotate-180 bg-brand-500/15 text-brand-600 dark:text-brand-400"
+                                    : ""
+                                }`}
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </button>
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <h2 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                      <Users className="w-5 h-5 text-brand-500" />
-                      <span>
-                        Lista de Jogadores Confirmados ({participants.length})
-                      </span>
-                    </h2>
-                    {isAdmin ? (
-                      <motion.button
-                        whileTap={{ scale: 0.94 }}
+                          {/* Conteúdo Animado do Acordeão (Lista de Jogadores) */}
+                          <AnimatePresence initial={false}>
+                            {isExpanded && (
+                              <motion.div
+                                key={`team-content-${teamNum}`}
+                                id={`team-players-${teamNum}`}
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                                  {teamPlayers.length === 0 ? (
+                                    <p className="text-xs text-slate-400 text-center py-4 italic">
+                                      Nenhum jogador escalado neste time ainda.
+                                    </p>
+                                  ) : (
+                                    <div className="space-y-1.5 pt-1">
+                                      {teamPlayers.map((p, idx) =>
+                                        renderParticipantRow(p, idx, teamConfig),
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* BOTÃO DE ESCOLHA MANUAL PELO JOGADOR (QUANDO RASPADINHA DESATIVADA) */}
+                                  {isJoined &&
+                                    currentParticipant &&
+                                    !match.sorteio_raspadinha_ativo && (
+                                      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                        <button
+                                          onClick={() =>
+                                            handleSelectTeamManual(teamNum)
+                                          }
+                                          disabled={!isMyTeam && isTeamFull}
+                                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                            isMyTeam
+                                              ? "bg-red-500 hover:bg-red-600 text-white shadow-md"
+                                              : isTeamFull
+                                                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                                                : "bg-brand-500 hover:bg-brand-600 text-white shadow-md hover:scale-[1.01]"
+                                          }`}
+                                        >
+                                          {isMyTeam ? (
+                                            <span>Sair do {teamConfig.name}</span>
+                                          ) : isTeamFull ? (
+                                            <span>Time Lotado</span>
+                                          ) : (
+                                            <span>
+                                              Entrar no {teamConfig.name}
+                                            </span>
+                                          )}
+                                        </button>
+                                      </div>
+                                    )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Reservas / Suplentes (Acordeão) */}
+                  {reserves.length > 0 && (
+                    <div className="bg-white dark:bg-slate-900/90 border border-amber-300 dark:border-amber-700 rounded-2xl sm:rounded-3xl shadow-xs overflow-hidden transition-all duration-200">
+                      <button
                         type="button"
-                        onClick={() => setIsPlayerManagerOpen(true)}
-                        className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        onClick={() => setIsReservesExpanded(!isReservesExpanded)}
+                        aria-expanded={isReservesExpanded}
+                        className="w-full min-h-[72px] p-4 sm:p-5 text-left flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-inset"
                       >
-                        <UserPlus className="w-3.5 h-3.5" />
-                        <span>+ Adicionar jogador</span>
-                      </motion.button>
-                    ) : (
-                      <span className="text-xs text-slate-400">
-                        Atualização em tempo real
-                      </span>
-                    )}
-                  </div>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0 shadow-xs">
+                            <UserPlus className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-black text-sm sm:text-base text-amber-600 dark:text-amber-400">
+                              Reservas / Suplentes
+                            </h3>
+                            <span className="text-xs font-bold text-slate-400 block mt-0.5">
+                              {reserves.length} jogador
+                              {reserves.length > 1 ? "es" : ""} aguardando vaga
+                            </span>
+                          </div>
+                        </div>
 
-                  {participants.length === 0 ? (
-                    <div className="text-center py-6 space-y-3">
-                      <p className="text-xs text-slate-500">
-                        Nenhum jogador inscrito ainda. Seja o primeiro a garantir
-                        a vaga!
-                      </p>
-                      {isAdmin && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[11px] font-bold text-slate-400 hidden sm:inline">
+                            {isReservesExpanded ? "Recolher" : "Ver Reservas"}
+                          </span>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${
+                              isReservesExpanded ? "rotate-180" : ""
+                            }`}
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                        </div>
+                      </button>
+
+                      <AnimatePresence initial={false}>
+                        {isReservesExpanded && (
+                          <motion.div
+                            id="match-reserves-list"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-amber-200/60 dark:border-amber-900/60 space-y-1.5">
+                              {reserves.map((p, idx) =>
+                                renderParticipantRow(p, idx),
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5.4 LISTA SIMPLES (Quando não há times sorteados ainda) */}
+              {!hasTeamsAssigned && (
+                <div className="space-y-4">
+                  {/* Opção de Escolha Manual nos cards de times quando desativada raspadinha */}
+                  {!match.sorteio_raspadinha_ativo && isJoined && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {Array.from({ length: match.num_times }).map(
+                        (_, teamIdx) => {
+                          const teamNum = teamIdx + 1;
+                          const teamConfig = getTeamInfo(match, teamNum);
+                          const teamPlayers = teamGroups[teamNum] || [];
+                          const isMyTeam = currentParticipant?.team === teamNum;
+                          const isTeamFull =
+                            teamPlayers.length >= match.jogadores_por_time;
+
+                          return (
+                            <div
+                              key={teamNum}
+                              className={`p-4 rounded-2xl border ${teamConfig.border} bg-white dark:bg-slate-900/90 flex items-center justify-between gap-2 shadow-xs`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <TeamBadge
+                                  teamInfo={teamConfig}
+                                  size="sm"
+                                  rounded="xl"
+                                  onClick={(e) => {
+                                    if (teamConfig.badge_url) {
+                                      e.stopPropagation();
+                                      openImagePreview({
+                                        imageUrl: teamConfig.badge_url,
+                                        title: teamConfig.name,
+                                        subtitle: "Emblema Oficial",
+                                        type: "team_badge",
+                                      });
+                                    }
+                                  }}
+                                />
+                                <div className="min-w-0">
+                                  <span
+                                    className={`font-black text-xs block ${teamConfig.text} truncate`}
+                                  >
+                                    {teamConfig.name}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    {teamPlayers.length}/
+                                    {match.jogadores_por_time} jogadores
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => handleSelectTeamManual(teamNum)}
+                                disabled={!isMyTeam && isTeamFull}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                  isMyTeam
+                                    ? "bg-red-500 text-white"
+                                    : isTeamFull
+                                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                      : "bg-brand-500 text-white hover:scale-105"
+                                }`}
+                              >
+                                {isMyTeam
+                                  ? "Sair"
+                                  : isTeamFull
+                                    ? "Lotado"
+                                    : "Escolher"}
+                              </button>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+
+                  <div className="bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <h2 className="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                        <Users className="w-5 h-5 text-brand-500" />
+                        <span>
+                          Lista de Jogadores Confirmados ({participants.length})
+                        </span>
+                      </h2>
+                      {isAdmin ? (
                         <motion.button
                           whileTap={{ scale: 0.94 }}
                           type="button"
                           onClick={() => setIsPlayerManagerOpen(true)}
-                          className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/25 inline-flex items-center gap-1.5 cursor-pointer"
+                          className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
-                          <UserPlus className="w-4 h-4" />
-                          <span>+ Adicionar jogador</span>
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>+ Adicionar</span>
                         </motion.button>
+                      ) : (
+                        <span className="text-xs text-slate-400">
+                          Atualização em tempo real
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {participants.map((p, index) =>
-                          renderParticipantRow(p, index),
-                        )}
-                      </div>
 
-                      {/* Botão de Adicionar Jogador no rodapé da lista para o Admin */}
-                      {isAdmin && (
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                    {participants.length === 0 ? (
+                      <div className="text-center py-8 space-y-3">
+                        <p className="text-xs text-slate-500 font-medium">
+                          Nenhum jogador inscrito ainda. Seja o primeiro a garantir a vaga!
+                        </p>
+                        {isAdmin && (
                           <motion.button
-                            whileTap={{ scale: 0.96 }}
+                            whileTap={{ scale: 0.94 }}
                             type="button"
                             onClick={() => setIsPlayerManagerOpen(true)}
-                            className="w-full py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                            className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/25 inline-flex items-center gap-1.5 cursor-pointer"
                           >
                             <UserPlus className="w-4 h-4" />
-                            <span>[ + Adicionar jogador ]</span>
+                            <span>+ Adicionar jogador</span>
                           </motion.button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {participants.map((p, index) =>
+                            renderParticipantRow(p, index),
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        {/* Botão de Adicionar Jogador no rodapé da lista para o Admin */}
+                        {isAdmin && (
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <motion.button
+                              whileTap={{ scale: 0.96 }}
+                              type="button"
+                              onClick={() => setIsPlayerManagerOpen(true)}
+                              className="w-full py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              <span>+ Adicionar Jogador</span>
+                            </motion.button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -3011,7 +2829,7 @@ export default function MatchDetailPage({
               <motion.button
                 whileTap={{ scale: 0.94 }}
                 onClick={() => setIsLoginOpen(true)}
-                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
+                className="min-h-11 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
               >
                 <span>Entrar / Cadastrar</span>
               </motion.button>
@@ -3026,7 +2844,7 @@ export default function MatchDetailPage({
               </div>
               <button
                 onClick={() => setIsChampionModalOpen(true)}
-                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1.5"
+                className="min-h-11 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1.5"
               >
                 <Trophy className="w-3.5 h-3.5" />
                 <span>Ver Campeão</span>
@@ -3068,7 +2886,7 @@ export default function MatchDetailPage({
                   <motion.button
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setIsScratchCardOpen(true)}
-                    className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 animate-pulse"
+                    className="min-h-11 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 animate-pulse"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                     <span>Raspadinha</span>
@@ -3079,7 +2897,7 @@ export default function MatchDetailPage({
                   <motion.button
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setIsPixModalOpen(true)}
-                    className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                    className="min-h-11 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5"
                   >
                     <QrCode className="w-3.5 h-3.5" />
                     <span>Pagar PIX</span>
@@ -3094,12 +2912,17 @@ export default function MatchDetailPage({
                 )}
 
                 <motion.button
+                  type="button"
                   whileTap={{ scale: 0.94 }}
                   onClick={handleToggleJoin}
-                  className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-500/10 dark:bg-slate-800 text-slate-500 hover:text-rose-500 font-bold text-xs transition-colors"
-                  title="Sair da Partida"
+                  className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 text-rose-600 transition-colors hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:text-rose-400 dark:hover:text-rose-300"
+                  aria-label="Desistir da partida"
+                  title="Desistir da partida"
                 >
                   <XCircle className="w-4 h-4" />
+                  <span className="hidden min-[360px]:inline text-[10px] font-black">
+                    Desistir
+                  </span>
                 </motion.button>
               </div>
             </div>
@@ -3122,7 +2945,7 @@ export default function MatchDetailPage({
                 whileHover={{ scale: 1.02 }}
                 disabled={isFull}
                 onClick={handleToggleJoin}
-                className={`flex-1 max-w-[210px] py-2.5 px-3 rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 ${
+                className={`flex-1 max-w-[210px] min-h-11 py-2.5 px-3 rounded-xl font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 ${
                   isFull
                     ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-500 via-brand-500 to-teal-500 text-white shadow-emerald-500/25'

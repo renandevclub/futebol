@@ -255,6 +255,7 @@ export default function Home() {
   // Membros da Liga Ativa
   const [leagueMembers, setLeagueMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [memberSearchTerm, setMemberSearchTerm] = useState("");
 
   // Carregar membros da liga ativa quando a aba "members" for acessada
   useEffect(() => {
@@ -289,6 +290,22 @@ export default function Home() {
 
     void fetchLeagueMembers();
   }, [currentLeague?.id, leagueTab]);
+
+  const filteredLeagueMembers = useMemo(() => {
+    if (!memberSearchTerm.trim()) return leagueMembers;
+    const q = memberSearchTerm.toLowerCase().trim();
+    return leagueMembers.filter((m) => {
+      const name = (m.user?.nome || "").toLowerCase();
+      const nickname = (m.user?.apelido || "").toLowerCase();
+      const pos = (
+        m.user?.futebol_position ||
+        m.user?.posicao ||
+        m.user?.volei_position ||
+        ""
+      ).toLowerCase();
+      return name.includes(q) || nickname.includes(q) || pos.includes(q);
+    });
+  }, [leagueMembers, memberSearchTerm]);
 
   const handleSelectMatch = (matchId: string) => {
     router.push(`/matches/${matchId}`);
@@ -1141,6 +1158,30 @@ export default function Home() {
                   </a>
                 </div>
 
+                {/* Dica para o Administrador da Liga */}
+                {canManageLeague(currentLeague.id) && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5 text-emerald-700 dark:text-emerald-300">
+                    <Shield className="w-4 h-4 shrink-0 text-emerald-500" />
+                    <span className="text-xs font-bold leading-relaxed">
+                      <strong>Painel do Administrador:</strong> Você pode escalar qualquer um desses atletas diretamente nas partidas da liga através do botão <strong>+ Adicionar Jogador</strong> na página da partida.
+                    </span>
+                  </div>
+                )}
+
+                {/* Barra de Busca de Membros */}
+                {leagueMembers.length > 3 && (
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
+                      placeholder="Buscar membro por nome, apelido ou posição..."
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
+                    />
+                  </div>
+                )}
+
                 {loadingMembers ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[1, 2, 3, 4].map((i) => (
@@ -1153,18 +1194,28 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                ) : leagueMembers.length === 0 ? (
+                ) : filteredLeagueMembers.length === 0 ? (
                   <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                    <Users className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      Nenhum participante listado ainda nesta liga.
+                      {memberSearchTerm
+                        ? "Nenhum participante encontrado com esse filtro."
+                        : "Nenhum participante listado ainda nesta liga."}
                     </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {leagueMembers.map((member) => {
+                    {filteredLeagueMembers.map((member) => {
                       const athlete: Profile | undefined = member.user;
                       const isOwnerRole = member.role === "owner";
                       const isAdminRole = member.role === "admin";
+                      const isLeagueVolei = currentLeague.sport_type === "volei";
+                      const positionName = isLeagueVolei
+                        ? athlete?.volei_position
+                        : athlete?.futebol_position || athlete?.posicao;
+                      const dominance = isLeagueVolei
+                        ? athlete?.volei_dominant_hand
+                        : athlete?.futebol_dominant_foot || athlete?.pe_dominante;
 
                       return (
                         <div
@@ -1188,7 +1239,7 @@ export default function Home() {
                             )}
 
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <Link
                                   href={`/profile/${athlete?.id}`}
                                   className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white hover:text-emerald-500 truncate"
@@ -1201,13 +1252,26 @@ export default function Home() {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] text-slate-400 block mt-0.5">
-                                {isOwnerRole
-                                  ? "👑 Criador / Dono"
-                                  : isAdminRole
-                                  ? "🛡️ Organizador"
-                                  : "⚽ Jogador"}
-                              </span>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400 flex-wrap">
+                                <span className="font-bold text-slate-500 dark:text-slate-400">
+                                  {isOwnerRole
+                                    ? "👑 Criador / Dono"
+                                    : isAdminRole
+                                    ? "🛡️ Organizador"
+                                    : "⚽ Jogador"}
+                                </span>
+                                {positionName && (
+                                  <span>• {positionName}</span>
+                                )}
+                                {dominance && (
+                                  <span>• {dominance}</span>
+                                )}
+                                {member.nivel_qualidade && (
+                                  <span className="text-amber-500 font-black">
+                                    ⭐ {member.nivel_qualidade}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
 

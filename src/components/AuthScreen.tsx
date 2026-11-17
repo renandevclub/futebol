@@ -231,30 +231,57 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <main className={standalone ? "auth-screen" : "fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center"} data-auth-mode={mode}>
+    <main
+      className={
+        standalone
+          ? "auth-screen"
+          : "fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center"
+      }
+      data-auth-mode={mode}
+    >
       {standalone ? (
         <aside className="auth-brand-panel" aria-label="F&V Sports">
           <div className="auth-brand-panel__lockup">
             <img src="/logo.png" alt="" className="auth-brand-panel__logo" />
             <div>
               <strong>F&amp;V Sports</strong>
-              <span>Esporte bom é esporte junto.</span>
+              <span>O jogo é nosso, a resenha é de todos!</span>
             </div>
           </div>
 
           <div className="auth-brand-panel__copy">
-            <span className="auth-brand-panel__eyebrow"><span /> SUA RESENHA, EM JOGO</span>
-            <h1>Junte a galera.<br /><em>Viva o esporte.</em></h1>
-            <p>Organize partidas, acompanhe suas ligas e fique perto de cada lance.</p>
+            <span className="auth-brand-panel__eyebrow">
+              <span /> SUA RESENHA, EM JOGO
+            </span>
+            <h1>
+              Junte a galera.
+              <br />
+              <em>Viva o esporte.</em>
+            </h1>
+            <p>
+              Organize partidas, acompanhe suas ligas e fique perto de cada
+              lance.
+            </p>
           </div>
 
-          <div className="auth-brand-panel__features" aria-label="Recursos da plataforma">
-            <span><CalendarDays aria-hidden="true" /> Partidas</span>
-            <span><Users aria-hidden="true" /> Ligas</span>
-            <span><Trophy aria-hidden="true" /> Rankings</span>
+          <div
+            className="auth-brand-panel__features"
+            aria-label="Recursos da plataforma"
+          >
+            <span>
+              <CalendarDays aria-hidden="true" /> Partidas
+            </span>
+            <span>
+              <Users aria-hidden="true" /> Ligas
+            </span>
+            <span>
+              <Trophy aria-hidden="true" /> Rankings
+            </span>
           </div>
 
-          <p className="auth-brand-panel__footnote">Futebol, vôlei e a resenha da sua turma.</p>
+          <p className="auth-brand-panel__footnote">
+            Futebol, vôlei e a resenha da sua turma.
+          </p>
         </aside>
       ) : (
         <motion.div
@@ -267,44 +294,64 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       )}
 
       <motion.div
-        initial={standalone ? { opacity: 0, y: 16, scale: 0.99 } : { y: "100%", opacity: 0.5 }}
+        initial={
+          standalone
+            ? { opacity: 0, y: 16, scale: 0.99 }
+            : { y: "100%", opacity: 0.5 }
+        }
         animate={{ y: 0, opacity: 1 }}
         exit={standalone ? { opacity: 0, y: 8 } : { y: "100%", opacity: 0 }}
-        transition={standalone ? { duration: 0.24, ease: "easeOut" } : { type: "spring", damping: 28, stiffness: 320 }}
+        transition={
+          standalone
+            ? { duration: 0.24, ease: "easeOut" }
+            : { type: "spring", damping: 28, stiffness: 320 }
+        }
         drag={standalone ? false : "y"}
         dragConstraints={{ top: 0 }}
         dragElastic={0.15}
         onDragEnd={standalone ? undefined : handleDragEnd}
-        className={standalone ? "auth-screen__panel" : "relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 max-h-[94dvh] sm:max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none overscroll-contain touch-pan-y pb-safe"}
+        className={
+          standalone
+            ? "auth-screen__panel"
+            : "relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 max-h-[94dvh] sm:max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none overscroll-contain touch-pan-y pb-safe"
+        }
       >
         {/* Alça visual de arraste no mobile */}
-        {!standalone && <div className="pt-0 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
-          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-        </div>}
+        {!standalone && (
+          <div className="pt-0 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+            <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          </div>
+        )}
 
         {/* Botão Fechar com touch target confortável */}
-        {!standalone && <motion.button
-          whileTap={{ scale: 0.88 }}
-          onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          aria-label="Fechar janela de login"
-        >
-          <X className="w-5 h-5" />
-        </motion.button>}
+        {!standalone && (
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={onClose}
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Fechar janela de login"
+          >
+            <X className="w-5 h-5" />
+          </motion.button>
+        )}
 
         {/* Header com Logo em Destaque */}
-        <div className={`text-center pt-0 sm:pt-1 ${standalone ? "auth-screen__form-heading" : ""}`}>
-          {!standalone && <div className="flex items-center justify-center mb-1.5">
-            <img
-              src="/logo.png"
-              alt="F&V Sports Logo"
-              className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
-              onError={(e) => {
-                // Fallback visual se a logo demorar a carregar
-                (e.currentTarget as HTMLElement).style.display = "none";
-              }}
-            />
-          </div>}
+        <div
+          className={`text-center pt-0 sm:pt-1 ${standalone ? "auth-screen__form-heading" : ""}`}
+        >
+          {!standalone && (
+            <div className="flex items-center justify-center mb-1.5">
+              <img
+                src="/logo.png"
+                alt="F&V Sports Logo"
+                className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
+                onError={(e) => {
+                  // Fallback visual se a logo demorar a carregar
+                  (e.currentTarget as HTMLElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
           <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight auth-screen__title">
             {mode === "login" ? "Acesse sua Conta" : "Crie sua Conta"}
           </h2>
@@ -316,7 +363,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         </div>
 
         {/* Alternador de Modo: Entrar / Cadastrar */}
-        <div className={`grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold ${standalone ? "auth-screen__mode" : ""}`}>
+        <div
+          className={`grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold ${standalone ? "auth-screen__mode" : ""}`}
+        >
           <motion.button
             whileTap={{ scale: 0.95 }}
             type="button"
@@ -376,295 +425,322 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
         {/* Formulário de Login */}
         <AnimatePresence mode="wait" initial={false}>
-        {mode === "login" ? (
-          <motion.form
-            key="login-form"
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.18 }}
-            onSubmit={handleLoginSubmit}
-            className={`space-y-3 ${standalone ? "auth-screen__form" : ""}`}
-          >
-            <div>
-              <label htmlFor="auth-phone" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Telefone (WhatsApp) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="tel"
-                  id="auth-phone"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  required
-                  placeholder="(91) 99999-9999"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="auth-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Senha <span className="text-red-500">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotModal(true)}
-                  className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="auth-password"
-                  autoComplete="current-password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errorMessage) setErrorMessage(null);
-                  }}
-                  className="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
-                  aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+          {mode === "login" ? (
+            <motion.form
+              key="login-form"
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.18 }}
+              onSubmit={handleLoginSubmit}
+              className={`space-y-3 ${standalone ? "auth-screen__form" : ""}`}
             >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Entrando...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  <span>Entrar no F&V Sports</span>
-                </>
-              )}
-            </motion.button>
-          </motion.form>
-        ) : (
-          /* Formulário de Cadastro */
-          <motion.form
-            key="register-form"
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.18 }}
-            onSubmit={handleRegisterSubmit}
-            className={`space-y-2.5 sm:space-y-3 ${standalone ? "auth-screen__form" : ""}`}
-          >
-            <div>
-              <label htmlFor="auth-full-name" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Nome Completo <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  id="auth-full-name"
-                  autoComplete="name"
-                  required
-                  placeholder="Ex: Carlos Silva"
-                  value={nome}
-                  onChange={(e) => {
-                    setNome(e.target.value);
-                    if (errorMessage) setErrorMessage(null);
-                  }}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label htmlFor="auth-nickname" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Apelido (Opcional)
+                <label
+                  htmlFor="auth-phone"
+                  className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Telefone (WhatsApp) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  id="auth-nickname"
-                  autoComplete="nickname"
-                  placeholder="Ex: Carlinhos"
-                  value={apelido}
-                  onChange={(e) => setApelido(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Gênero <span className="text-red-500">*</span>
-                </label>
-                <div role="group" aria-label="Gênero" className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setGenero("masculino")}
-                    aria-pressed={genero === "masculino"}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      genero === "masculino"
-                        ? "bg-blue-500 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                    }`}
-                  >
-                    ♂ Masc
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGenero("feminino")}
-                    aria-pressed={genero === "feminino"}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      genero === "feminino"
-                        ? "bg-pink-500 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                    }`}
-                  >
-                    ♀ Fem
-                  </button>
+                <div className="relative">
+                  <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="tel"
+                    id="auth-phone"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    required
+                    placeholder="(91) 99999-9999"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
+                  />
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="auth-phone" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Telefone (WhatsApp) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="tel"
-                  id="auth-phone"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  required
-                  placeholder="(91) 99999-9999"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
-                />
-              </div>
-            </div>
-
-            {/* Senha e Confirmar Senha lado a lado */}
-            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label htmlFor="auth-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Criar Senha <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label
+                    htmlFor="auth-password"
+                    className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300"
+                  >
+                    Senha <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type={showPassword ? "text" : "password"}
                     id="auth-password"
-                    autoComplete="new-password"
+                    autoComplete="current-password"
                     required
-                    placeholder="Mín. 8 dígitos"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (errorMessage) setErrorMessage(null);
                     }}
-                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
                     aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-3.5 h-3.5" />
+                      <EyeOff className="w-4 h-4" />
                     ) : (
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-4 h-4" />
                     )}
                   </button>
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Entrando...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span>Entrar no F&V Sports</span>
+                  </>
+                )}
+              </motion.button>
+            </motion.form>
+          ) : (
+            /* Formulário de Cadastro */
+            <motion.form
+              key="register-form"
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.18 }}
+              onSubmit={handleRegisterSubmit}
+              className={`space-y-2.5 sm:space-y-3 ${standalone ? "auth-screen__form" : ""}`}
+            >
+              <div>
+                <label
+                  htmlFor="auth-full-name"
+                  className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Nome Completo <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    id="auth-full-name"
+                    autoComplete="name"
+                    required
+                    placeholder="Ex: Carlos Silva"
+                    value={nome}
+                    onChange={(e) => {
+                      setNome(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label
+                    htmlFor="auth-nickname"
+                    className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Apelido (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="auth-nickname"
+                    autoComplete="nickname"
+                    placeholder="Ex: Carlinhos"
+                    value={apelido}
+                    onChange={(e) => setApelido(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Gênero <span className="text-red-500">*</span>
+                  </label>
+                  <div
+                    role="group"
+                    aria-label="Gênero"
+                    className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setGenero("masculino")}
+                      aria-pressed={genero === "masculino"}
+                      className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                        genero === "masculino"
+                          ? "bg-blue-500 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      ♂ Masc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGenero("feminino")}
+                      aria-pressed={genero === "feminino"}
+                      className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                        genero === "feminino"
+                          ? "bg-pink-500 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      ♀ Fem
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="auth-confirm-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Confirmar Senha <span className="text-red-500">*</span>
+                <label
+                  htmlFor="auth-phone"
+                  className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Telefone (WhatsApp) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="auth-confirm-password"
-                    autoComplete="new-password"
+                    type="tel"
+                    id="auth-phone"
+                    inputMode="numeric"
+                    autoComplete="tel"
                     required
-                    placeholder="Repita a senha"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    placeholder="(91) 99999-9999"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
-                    aria-label={
-                      showConfirmPassword
-                        ? "Ocultar confirmação de senha"
-                        : "Ver confirmação de senha"
-                    }
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-3.5 h-3.5" />
-                    ) : (
-                      <Eye className="w-3.5 h-3.5" />
-                    )}
-                  </button>
                 </div>
               </div>
-            </div>
 
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Cadastrando...</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Finalizar Cadastro</span>
-                </>
-              )}
-            </motion.button>
-          </motion.form>
-        )}
+              {/* Senha e Confirmar Senha lado a lado */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label
+                    htmlFor="auth-password"
+                    className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Criar Senha <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="auth-password"
+                      autoComplete="new-password"
+                      required
+                      placeholder="Mín. 8 dígitos"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                      aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="auth-confirm-password"
+                    className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"
+                  >
+                    Confirmar Senha <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="auth-confirm-password"
+                      autoComplete="new-password"
+                      required
+                      placeholder="Repita a senha"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                      aria-label={
+                        showConfirmPassword
+                          ? "Ocultar confirmação de senha"
+                          : "Ver confirmação de senha"
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Cadastrando...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Finalizar Cadastro</span>
+                  </>
+                )}
+              </motion.button>
+            </motion.form>
+          )}
         </AnimatePresence>
 
         {/* Modal Interativo de Recuperação de Senha com Código Temporário */}
