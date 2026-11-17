@@ -33,6 +33,7 @@ import Link from "next/link";
 import { subscribeToTables } from "@/lib/realtime";
 import dynamic from "next/dynamic";
 import { MatchCountdown } from "@/components/MatchCountdown";
+import GradientText from "./GradientText";
 import { TEAM_COLORS } from "@/constants/teamColors";
 import {
   getMatchChampionData,
@@ -879,12 +880,20 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                             onOpenStandings={() => handleOpenStandingsModal(match)}
                           />
 
-                          {/* Título da Partida */}
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-amber-400 via-yellow-400 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.3)] shrink-0" />
-                            <h3 className="font-black text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors leading-tight tracking-tight truncate">
-                              {match.titulo}
+                          {/* Título da Partida Encerrada (Centralizado e Maiúsculo com GradientText) */}
+                          <div className="flex flex-col items-center justify-center text-center py-1 sm:py-1.5 min-w-0">
+                            <h3 className="font-black text-xl sm:text-2xl uppercase tracking-[0.14em] leading-tight line-clamp-2 px-2">
+                              <GradientText
+                                colors={["#fbbf24", "#ffffff", "#b45309"]}
+                                animationSpeed={2}
+                                variant="flow"
+                                glow={0.5}
+                                className="font-black text-xl sm:text-2xl tracking-[0.14em]"
+                              >
+                                {match.titulo}
+                              </GradientText>
                             </h3>
+                            <div className="h-1 sm:h-1.5 w-12 sm:w-16 rounded-full mx-auto mt-2.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all duration-300 group-hover:w-20" />
                           </div>
 
                           {/* Informações da Partida Encerrada */}
@@ -942,123 +951,117 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                     />
 
                     <div className="space-y-3 pt-1">
-                      {/* 1. TOP BAR DO CARD: Modalidade + Vagas + Badges + GPS */}
+                      {/* 1. TOP BAR DO CARD: Vagas + Status de Inscrição (Sinalizadores Gêmeos) */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                          {/* Badge de Modalidade (Futebol ou Vôlei) */}
-                          <div
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 border ${
-                              match.sport_type === "volei"
-                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            }`}
-                          >
-                            <span>
-                              {match.sport_type === "volei"
-                                ? "🏐 Vôlei"
-                                : "⚽ Futebol"}
-                            </span>
-                          </div>
-
-                          {/* Badge de Vagas */}
-                          <div
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0 ${
-                              isFull
-                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
-                                : "bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                            }`}
-                          >
-                            {!isFull ? (
-                              <>
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                                </span>
-                                <span>
-                                  {remaining}{" "}
-                                  {remaining === 1 ? "vaga" : "vagas"}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                                <span>Lotada</span>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Badge Raspadinha */}
-                          {match.sorteio_raspadinha_ativo && (
-                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0">
-                              <Sparkles
-                                className="w-3 h-3 text-amber-500 animate-spin"
-                                style={{ animationDuration: "6s" }}
-                              />
-                              <span>Raspadinha</span>
-                            </div>
-                          )}
-
-                          {/* Badge de Usuário Inscrito */}
-                          {isJoined && (
-                            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs shrink-0">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Inscrito</span>
-                            </div>
+                        {/* Badge de Vagas (Esquerda) */}
+                        <div
+                          className={`inline-flex items-center justify-center gap-1.5 h-8 sm:h-8.5 px-3.5 sm:px-4 min-w-[102px] sm:min-w-[112px] rounded-full border text-xs sm:text-[13px] font-black uppercase tracking-wider shadow-xs shrink-0 ${
+                            isFull
+                              ? "bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/35"
+                              : "bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/35"
+                          }`}
+                        >
+                          {!isFull ? (
+                            <>
+                              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                              </span>
+                              <span>
+                                {remaining}{" "}
+                                {remaining === 1 ? "vaga" : "vagas"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                              <span>Lotada</span>
+                            </>
                           )}
                         </div>
 
-                        {/* Botão de Localização / GPS compacto */}
-                        {(() => {
-                          const getMapUrl = () => {
-                            if (match.maps_url) return match.maps_url;
-                            const locLower = match.local.toLowerCase();
-                            if (locLower.includes("arena 500"))
-                              return "https://maps.app.goo.gl/Muxi7iWHoeY2PkTB8";
-                            if (locLower.includes("nu rio"))
-                              return "https://maps.app.goo.gl/axspwsn9hK2kAek19";
-                            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.local + (match.endereco ? " " + match.endereco : ""))}`;
-                          };
-                          const mapUrl = getMapUrl();
-
-                          return (
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.94 }}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(mapUrl, "_blank");
-                              }}
-                              className="group/gps inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-950/70 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 border border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/40 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all duration-200 shadow-xs max-w-[130px] sm:max-w-[200px] shrink-0 cursor-pointer"
-                              title="Abrir rota no Google Maps / GPS"
-                            >
-                              <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
-                              <span className="font-extrabold text-[11px] sm:text-xs tracking-tight truncate">
-                                {match.local}
-                              </span>
-                            </motion.button>
-                          );
-                        })()}
+                        {/* Badge de Usuário Inscrito (Direita) */}
+                        {isJoined && (
+                          <div className="inline-flex items-center justify-center gap-1.5 h-8 sm:h-8.5 px-3.5 sm:px-4 min-w-[102px] sm:min-w-[112px] rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/35 text-xs sm:text-[13px] font-black uppercase tracking-wider shadow-xs shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                            <span>Inscrito</span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* 2. TÍTULO DO CONFRONTO UNIFICADO */}
-                      <div className="flex items-center gap-2.5 min-w-0 pt-0.5">
-                        <div
-                          className={`w-2 h-7 sm:h-8 rounded-full shrink-0 ${
+                      {/* 2. TÍTULO DO CONFRONTO UNIFICADO (CENTRALIZADO E EM MAIÚSCULO COM GRADIENT TEXT) */}
+                      <div className="flex flex-col items-center justify-center text-center py-1.5 sm:py-2 min-w-0">
+                        <motion.h3
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="font-black text-xl sm:text-2xl uppercase tracking-[0.14em] leading-tight line-clamp-2 px-2"
+                        >
+                          <GradientText
+                            colors={
+                              match.sport_type === "volei"
+                                ? ["#fbbf24", "#ffffff", "#d97706"]
+                                : ["#58ff00", "#ffffff", "#086415"]
+                            }
+                            animationSpeed={2}
+                            variant="flow"
+                            glow={0.5}
+                            className="font-black text-xl sm:text-2xl tracking-[0.14em]"
+                          >
+                            {match.titulo}
+                          </GradientText>
+                        </motion.h3>
+                        <motion.div
+                          initial={{ width: 0, opacity: 0 }}
+                          whileInView={{ width: "3.5rem", opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                          className={`h-1 sm:h-1.5 rounded-full mx-auto mt-2.5 transition-all duration-300 group-hover:!w-24 ${
                             match.sport_type === "volei"
-                              ? "bg-gradient-to-b from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
-                              : "bg-gradient-to-b from-brand-400 via-emerald-500 to-teal-600 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
+                              ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.6)]"
+                              : "bg-gradient-to-r from-[#58ff00] via-emerald-500 to-[#086415] shadow-[0_0_12px_rgba(88,255,0,0.5)]"
                           }`}
+                          style={{ width: "3.5rem" }}
                         />
-                        <h3 className="font-black text-lg sm:text-xl text-slate-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors leading-tight tracking-tight truncate">
-                          {match.titulo}
-                        </h3>
                       </div>
 
                       {/* 3. CRONÔMETRO REGRESSIVO */}
                       <div>
                         <MatchCountdown match={match} />
                       </div>
+
+                      {/* 4. BLOCO DE LOCALIZAÇÃO GPS "COMO CHEGAR" */}
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.01 }}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(mapUrl, "_blank");
+                        }}
+                        className="w-full flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 hover:bg-emerald-500/[0.08] dark:hover:bg-emerald-500/15 border border-slate-200/80 dark:border-slate-800/90 hover:border-emerald-500/40 transition-all duration-200 cursor-pointer group/gps text-left shadow-xs"
+                        title="Abrir rota no Google Maps / GPS"
+                      >
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500 group-hover/gps:scale-105 transition-transform">
+                            <MapPin className="w-4 h-4 text-emerald-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate group-hover/gps:text-emerald-500 dark:group-hover/gps:text-emerald-400 transition-colors">
+                              {match.local}
+                            </span>
+                            <span className="block text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                              {match.endereco || "Toque para abrir no GPS / Google Maps"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-500 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 shadow-md shadow-emerald-500/25 group-hover/gps:bg-emerald-600 transition-colors duration-200">
+                          <Navigation className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                          <span>COMO CHEGAR</span>
+                        </div>
+                      </motion.button>
 
                       {/* Painel de 4 Informações Essenciais */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 sm:p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 text-xs">
