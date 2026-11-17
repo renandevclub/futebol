@@ -18,10 +18,6 @@ const MyWalletModal = dynamic(
   () => import("@/components/MyWalletModal").then((m) => m.MyWalletModal),
   { ssr: false },
 );
-const LoginModal = dynamic(
-  () => import("@/components/LoginModal").then((m) => m.LoginModal),
-  { ssr: false },
-);
 const LeagueSelectNavigationModal = dynamic(
   () =>
     import("@/components/LeagueSelectNavigationModal").then(
@@ -50,7 +46,6 @@ export const BottomNavBar: React.FC = () => {
   } = useLeague();
 
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
   const [unreadMatchesCount, setUnreadMatchesCount] = useState<number>(0);
   const [unreadFeedCount, setUnreadFeedCount] = useState<number>(0);
@@ -63,14 +58,16 @@ export const BottomNavBar: React.FC = () => {
 
   // Não exibir barra de navegação inferior na página pública (/ quando visitante não autenticado),
   // nas telas de partida (/matches/...), controle ou telão TV
-  const isPublicPage = (!user || isAuthLoading) && pathname === "/";
+  const isAccessPage = pathname === "/login" || pathname === "/cadastro";
 
   const shouldHideBottomNav = Boolean(
-    pathname &&
-      (pathname.startsWith("/matches/") ||
-        pathname.includes("/tv") ||
-        pathname.includes("/control") ||
-        isPublicPage),
+    isAccessPage ||
+      !user ||
+      isAuthLoading ||
+      (pathname &&
+        (pathname.startsWith("/matches/") ||
+          pathname.includes("/tv") ||
+          pathname.includes("/control"))),
   );
 
   const triggerHaptic = () => {
@@ -163,7 +160,7 @@ export const BottomNavBar: React.FC = () => {
     triggerHaptic();
 
     if (!user) {
-      setIsLoginModalOpen(true);
+      router.push("/login");
       return;
     }
 
@@ -193,7 +190,7 @@ export const BottomNavBar: React.FC = () => {
     triggerHaptic();
 
     if (!user) {
-      setIsLoginModalOpen(true);
+      router.push("/login");
       return;
     }
 
@@ -388,7 +385,7 @@ export const BottomNavBar: React.FC = () => {
               if (user) {
                 setIsWalletModalOpen(true);
               } else {
-                setIsLoginModalOpen(true);
+                router.push("/login");
               }
             }}
             className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
@@ -478,7 +475,7 @@ export const BottomNavBar: React.FC = () => {
               type="button"
               onClick={() => {
                 triggerHaptic();
-                setIsLoginModalOpen(true);
+                router.push("/login");
               }}
               className="relative flex flex-col items-center justify-center h-full w-full touch-target transition-all group select-none cursor-pointer"
               aria-label="Fazer login ou acessar perfil"
@@ -520,13 +517,6 @@ export const BottomNavBar: React.FC = () => {
         />
       )}
 
-      {/* Modal de Login */}
-      {isLoginModalOpen && (
-        <LoginModal
-          isOpen={isLoginModalOpen}
-          onClose={() => setIsLoginModalOpen(false)}
-        />
-      )}
     </>
   );
 };

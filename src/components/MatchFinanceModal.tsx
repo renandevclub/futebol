@@ -436,15 +436,14 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
           F&V Sports • Documento Oficial de Fechamento Financeiro • ${match.titulo}
         </div>
 
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
       </body>
       </html>
     `;
 
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };

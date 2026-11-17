@@ -69,6 +69,8 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import { ModalAccessibilityManager } from "@/components/ModalAccessibilityManager";
 import { LeagueProvider } from "@/context/LeagueContext";
+import { AuthRouteGuard } from "@/components/AuthRouteGuard";
+import { PostLoginPreloader } from "@/components/PostLoginPreloader";
 
 export default function RootLayout({
   children,
@@ -83,9 +85,12 @@ export default function RootLayout({
             <ServiceWorkerRegister />
             <PwaInstallPrompt />
             <ModalAccessibilityManager />
-            <div className="min-h-dvh flex flex-col">
-              {children}
-            </div>
+            <AuthRouteGuard>
+              <div className="min-h-dvh flex flex-col">
+                {children}
+              </div>
+            </AuthRouteGuard>
+            <PostLoginPreloader />
             <Suspense fallback={null}>
               <BottomNavBar />
             </Suspense>

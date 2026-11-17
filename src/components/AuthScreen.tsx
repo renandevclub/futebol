@@ -1,0 +1,902 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import {
+  X,
+  Smartphone,
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  LogIn,
+  UserPlus,
+  AlertCircle,
+  HelpCircle,
+  MessageCircle,
+  ShieldCheck,
+  CheckCircle2,
+  KeyRound,
+  ShieldAlert,
+  CalendarDays,
+  Trophy,
+  Users,
+} from "lucide-react";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import {
+  formatPhoneDisplay,
+  validatePhoneNumber,
+  cleanPhoneNumber,
+} from "@/lib/phoneUtils";
+
+interface AuthScreenProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode?: "login" | "register";
+  standalone?: boolean;
+  onModeChange?: (mode: "login" | "register") => void;
+}
+
+export const AuthScreen: React.FC<AuthScreenProps> = ({
+  isOpen,
+  onClose,
+  initialMode = "login",
+  standalone = false,
+  onModeChange,
+}) => {
+  const { login, signup, recoverPassword } = useAuth();
+
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
+
+  useEffect(() => {
+    if (isOpen && initialMode) {
+      setMode(initialMode);
+      setErrorMessage(null);
+    }
+  }, [isOpen, initialMode]);
+
+  // Campos de Cadastro
+  const [nome, setNome] = useState("");
+  const [apelido, setApelido] = useState("");
+  const [genero, setGenero] = useState<"masculino" | "feminino">("masculino");
+
+  // Campos Comuns
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Estados Visuais
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados do Fluxo de Recuperação
+  const [recoveryTab, setRecoveryTab] = useState<"code" | "whatsapp">("code");
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState("");
+  const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [isRecoverySubmitting, setIsRecoverySubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneDisplay(e.target.value);
+    setPhone(formatted);
+    if (errorMessage) setErrorMessage(null);
+  };
+
+  const handleRecoveryPhoneChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const formatted = formatPhoneDisplay(e.target.value);
+    setRecoveryPhone(formatted);
+    if (recoveryError) setRecoveryError(null);
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const validation = validatePhoneNumber(phone);
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || "Número de telefone inválido.");
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage("Por favor, informe sua senha de acesso.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await login(phone, password);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      onClose();
+    } else {
+      setErrorMessage(result.error || "Telefone ou senha incorretos.");
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!nome.trim()) {
+      setErrorMessage("Por favor, informe seu nome completo.");
+      return;
+    }
+
+    const validation = validatePhoneNumber(phone);
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || "Número de telefone inválido.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage("A senha deve conter no mínimo 8 caracteres.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage(
+        "A confirmação de senha não coincide com a senha digitada.",
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await signup({
+      nome: nome.trim(),
+      apelido: apelido.trim() || undefined,
+      whatsapp: phone,
+      password: password,
+      genero: genero,
+    });
+    setIsSubmitting(false);
+
+    if (result.success) {
+      onClose();
+    } else {
+      setErrorMessage(result.error || "Não foi possível realizar o cadastro.");
+    }
+  };
+
+  const handleRecoverySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+
+    const validation = validatePhoneNumber(recoveryPhone);
+    if (!validation.isValid) {
+      setRecoveryError(validation.error || "Número de WhatsApp inválido.");
+      return;
+    }
+
+    const cleanCode = recoveryCode.trim();
+    if (!cleanCode || cleanCode.length < 6) {
+      setRecoveryError("O código de recuperação deve conter 6 dígitos.");
+      return;
+    }
+
+    if (recoveryPassword.length < 8) {
+      setRecoveryError("A nova senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+
+    if (recoveryPassword !== recoveryConfirmPassword) {
+      setRecoveryError(
+        "A confirmação de senha não confere com a nova senha digitada.",
+      );
+      return;
+    }
+
+    setIsRecoverySubmitting(true);
+    const result = await recoverPassword(
+      recoveryPhone,
+      cleanCode,
+      recoveryPassword,
+    );
+    setIsRecoverySubmitting(false);
+
+    if (result.success) {
+      setShowForgotModal(false);
+      setPhone(recoveryPhone);
+      setPassword("");
+      setMode("login");
+    } else {
+      setRecoveryError(result.error || "Não foi possível redefinir sua senha.");
+    }
+  };
+
+  const handleDragEnd = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) => {
+    if (info.offset.y > 100 || info.velocity.y > 400) {
+      onClose();
+    }
+  };
+
+  const changeMode = (nextMode: "login" | "register") => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    setErrorMessage(null);
+    onModeChange?.(nextMode);
+  };
+
+  return (
+    <main className={standalone ? "auth-screen" : "fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center"} data-auth-mode={mode}>
+      {standalone ? (
+        <aside className="auth-brand-panel" aria-label="F&V Sports">
+          <div className="auth-brand-panel__lockup">
+            <img src="/logo.png" alt="" className="auth-brand-panel__logo" />
+            <div>
+              <strong>F&amp;V Sports</strong>
+              <span>Esporte bom é esporte junto.</span>
+            </div>
+          </div>
+
+          <div className="auth-brand-panel__copy">
+            <span className="auth-brand-panel__eyebrow"><span /> SUA RESENHA, EM JOGO</span>
+            <h1>Junte a galera.<br /><em>Viva o esporte.</em></h1>
+            <p>Organize partidas, acompanhe suas ligas e fique perto de cada lance.</p>
+          </div>
+
+          <div className="auth-brand-panel__features" aria-label="Recursos da plataforma">
+            <span><CalendarDays aria-hidden="true" /> Partidas</span>
+            <span><Users aria-hidden="true" /> Ligas</span>
+            <span><Trophy aria-hidden="true" /> Rankings</span>
+          </div>
+
+          <p className="auth-brand-panel__footnote">Futebol, vôlei e a resenha da sua turma.</p>
+        </aside>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm"
+        />
+      )}
+
+      <motion.div
+        initial={standalone ? { opacity: 0, y: 16, scale: 0.99 } : { y: "100%", opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={standalone ? { opacity: 0, y: 8 } : { y: "100%", opacity: 0 }}
+        transition={standalone ? { duration: 0.24, ease: "easeOut" } : { type: "spring", damping: 28, stiffness: 320 }}
+        drag={standalone ? false : "y"}
+        dragConstraints={{ top: 0 }}
+        dragElastic={0.15}
+        onDragEnd={standalone ? undefined : handleDragEnd}
+        className={standalone ? "auth-screen__panel" : "relative z-10 bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2rem] sm:rounded-3xl w-full max-w-md p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 max-h-[94dvh] sm:max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none overscroll-contain touch-pan-y pb-safe"}
+      >
+        {/* Alça visual de arraste no mobile */}
+        {!standalone && <div className="pt-0 pb-1 sm:hidden flex justify-center cursor-grab active:cursor-grabbing shrink-0">
+          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+        </div>}
+
+        {/* Botão Fechar com touch target confortável */}
+        {!standalone && <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={onClose}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Fechar janela de login"
+        >
+          <X className="w-5 h-5" />
+        </motion.button>}
+
+        {/* Header com Logo em Destaque */}
+        <div className={`text-center pt-0 sm:pt-1 ${standalone ? "auth-screen__form-heading" : ""}`}>
+          {!standalone && <div className="flex items-center justify-center mb-1.5">
+            <img
+              src="/logo.png"
+              alt="F&V Sports Logo"
+              className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 duration-300"
+              onError={(e) => {
+                // Fallback visual se a logo demorar a carregar
+                (e.currentTarget as HTMLElement).style.display = "none";
+              }}
+            />
+          </div>}
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight auth-screen__title">
+            {mode === "login" ? "Acesse sua Conta" : "Crie sua Conta"}
+          </h2>
+          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 auth-screen__subtitle">
+            {mode === "login"
+              ? "Entre com seu telefone e senha para acessar suas partidas e ligas"
+              : "Cadastre-se para participar dos jogos e acompanhar suas estatísticas"}
+          </p>
+        </div>
+
+        {/* Alternador de Modo: Entrar / Cadastrar */}
+        <div className={`grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold ${standalone ? "auth-screen__mode" : ""}`}>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            type="button"
+            onClick={() => changeMode("login")}
+            aria-pressed={mode === "login"}
+            className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              mode === "login"
+                ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Entrar</span>
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            type="button"
+            onClick={() => changeMode("register")}
+            aria-pressed={mode === "register"}
+            className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              mode === "register"
+                ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Criar Conta</span>
+          </motion.button>
+        </div>
+
+        {/* Mensagem de Erro Amigável */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="auth-screen__error p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-start gap-2.5 text-xs text-red-600 dark:text-red-400 font-semibold"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <span>{errorMessage}</span>
+                {mode === "login" && errorMessage.includes("incorretos") && (
+                  <button
+                    type="button"
+                    onClick={() => changeMode("register")}
+                    className="text-brand-600 dark:text-brand-400 font-extrabold underline block hover:opacity-80"
+                  >
+                    Ainda não definiu sua senha? Clique aqui para criar sua
+                    conta.
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Formulário de Login */}
+        <AnimatePresence mode="wait" initial={false}>
+        {mode === "login" ? (
+          <motion.form
+            key="login-form"
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18 }}
+            onSubmit={handleLoginSubmit}
+            className={`space-y-3 ${standalone ? "auth-screen__form" : ""}`}
+          >
+            <div>
+              <label htmlFor="auth-phone" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Telefone (WhatsApp) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="tel"
+                  id="auth-phone"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  required
+                  placeholder="(91) 99999-9999"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="auth-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Senha <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="auth-password"
+                  autoComplete="current-password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  className="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                  aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Entrando...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Entrar no F&V Sports</span>
+                </>
+              )}
+            </motion.button>
+          </motion.form>
+        ) : (
+          /* Formulário de Cadastro */
+          <motion.form
+            key="register-form"
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.18 }}
+            onSubmit={handleRegisterSubmit}
+            className={`space-y-2.5 sm:space-y-3 ${standalone ? "auth-screen__form" : ""}`}
+          >
+            <div>
+              <label htmlFor="auth-full-name" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Nome Completo <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  id="auth-full-name"
+                  autoComplete="name"
+                  required
+                  placeholder="Ex: Carlos Silva"
+                  value={nome}
+                  onChange={(e) => {
+                    setNome(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="auth-nickname" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Apelido (Opcional)
+                </label>
+                <input
+                  type="text"
+                  id="auth-nickname"
+                  autoComplete="nickname"
+                  placeholder="Ex: Carlinhos"
+                  value={apelido}
+                  onChange={(e) => setApelido(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Gênero <span className="text-red-500">*</span>
+                </label>
+                <div role="group" aria-label="Gênero" className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setGenero("masculino")}
+                    aria-pressed={genero === "masculino"}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      genero === "masculino"
+                        ? "bg-blue-500 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    ♂ Masc
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGenero("feminino")}
+                    aria-pressed={genero === "feminino"}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      genero === "feminino"
+                        ? "bg-pink-500 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    ♀ Fem
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="auth-phone" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Telefone (WhatsApp) <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="tel"
+                  id="auth-phone"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  required
+                  placeholder="(91) 99999-9999"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Senha e Confirmar Senha lado a lado */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="auth-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Criar Senha <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="auth-password"
+                    autoComplete="new-password"
+                    required
+                    placeholder="Mín. 8 dígitos"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="auth-confirm-password" className="block text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Confirmar Senha <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="auth-confirm-password"
+                    autoComplete="new-password"
+                    required
+                    placeholder="Repita a senha"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    className="w-full pl-9 pr-7 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-1.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-lg"
+                    aria-label={
+                      showConfirmPassword
+                        ? "Ocultar confirmação de senha"
+                        : "Ver confirmação de senha"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Cadastrando...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Finalizar Cadastro</span>
+                </>
+              )}
+            </motion.button>
+          </motion.form>
+        )}
+        </AnimatePresence>
+
+        {/* Modal Interativo de Recuperação de Senha com Código Temporário */}
+        {showForgotModal && (
+          <div className="auth-screen__recovery-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="auth-screen__recovery-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                      Recuperação de Senha
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Código temporário fornecido pelo Administrador
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Seletor de Modo: Tenho Código / Pedir Código */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryTab("code");
+                    setRecoveryError(null);
+                  }}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    recoveryTab === "code"
+                      ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Digitar Código</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryTab("whatsapp");
+                    setRecoveryError(null);
+                  }}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    recoveryTab === "whatsapp"
+                      ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Pedir Código</span>
+                </button>
+              </div>
+
+              {recoveryError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-start gap-2 text-xs text-red-600 dark:text-red-400 font-semibold">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{recoveryError}</span>
+                </div>
+              )}
+
+              {recoveryTab === "code" ? (
+                /* Formulário de Redefinição com Código */
+                <form onSubmit={handleRecoverySubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Telefone (WhatsApp){" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        required
+                        placeholder="(91) 99999-9999"
+                        value={recoveryPhone}
+                        onChange={handleRecoveryPhoneChange}
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Código de 6 Dígitos{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        required
+                        placeholder="Ex: 842915"
+                        value={recoveryCode}
+                        onChange={(e) => {
+                          setRecoveryCode(e.target.value.replace(/\D/g, ""));
+                          if (recoveryError) setRecoveryError(null);
+                        }}
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Válido por 30 minutos após a geração pelo Administrador.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Nova Senha <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type={showRecoveryPassword ? "text" : "password"}
+                        required
+                        placeholder="Mínimo 8 caracteres"
+                        value={recoveryPassword}
+                        onChange={(e) => setRecoveryPassword(e.target.value)}
+                        className="w-full pl-10 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowRecoveryPassword(!showRecoveryPassword)
+                        }
+                        className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        {showRecoveryPassword ? (
+                          <EyeOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Confirmar Nova Senha{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type={showRecoveryPassword ? "text" : "password"}
+                        required
+                        placeholder="Repita a nova senha"
+                        value={recoveryConfirmPassword}
+                        onChange={(e) =>
+                          setRecoveryConfirmPassword(e.target.value)
+                        }
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="submit"
+                    disabled={isRecoverySubmitting}
+                    className="w-full py-3 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2 mt-3 cursor-pointer"
+                  >
+                    {isRecoverySubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Redefinindo Senha...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Confirmar Nova Senha</span>
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+              ) : (
+                /* Solicitar Código ao Administrador no WhatsApp */
+                <div className="space-y-3 text-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-left">
+                    Para garantir a segurança da sua conta, o código de
+                    recuperação é gerado individualmente pelo{" "}
+                    <strong>Super Administrador</strong>.
+                  </p>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 text-left space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-brand-600 dark:text-brand-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      <span>Como funciona:</span>
+                    </div>
+                    <p>
+                      1. Clique no botão abaixo para abrir a conversa oficial no
+                      WhatsApp.
+                    </p>
+                    <p>
+                      2. O Administrador confirmará seu cadastro e gerará um
+                      código de 6 dígitos.
+                    </p>
+                    <p>
+                      3. Volte nesta tela na aba &quot;Digitar Código&quot; e
+                      defina sua nova senha.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <a
+                      href="https://wa.me/5591993370456?text=Ol%C3%A1%2C%20preciso%20de%20um%20c%C3%B3digo%20de%20recupera%C3%A7%C3%A3o%20de%20senha%20no%20F%26V%20Sports."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Falar com o Organizador no WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </main>
+  );
+};

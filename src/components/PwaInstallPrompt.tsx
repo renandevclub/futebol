@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Download, Plus, Share, Smartphone, X, Zap } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const INSTALL_DISMISSED_KEY = 'futresenha:pwa-install-dismissed-at';
 const INSTALL_CONFIRMED_KEY = 'futresenha:pwa-installed';
@@ -83,6 +85,9 @@ function wasPreviouslyInstalled() {
 }
 
 export function PwaInstallPrompt() {
+  const pathname = usePathname();
+  const { user, isLoading } = useAuth();
+  const canPrompt = !isLoading && Boolean(user) && pathname !== '/login' && pathname !== '/cadastro';
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const scheduleRef = useRef<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -126,7 +131,7 @@ export function PwaInstallPrompt() {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       deferredPromptRef.current = event as BeforeInstallPromptEvent;
-      showWhenReady('native');
+      if (canPrompt) showWhenReady('native');
     };
 
     const handleAppInstalled = () => {
@@ -147,7 +152,9 @@ export function PwaInstallPrompt() {
     window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('storage', handleStorageChange);
 
-    if (isIosSafari()) {
+    if (deferredPromptRef.current && canPrompt) {
+      showWhenReady('native');
+    } else if (isIosSafari() && canPrompt) {
       showWhenReady('ios');
     }
 
@@ -173,7 +180,7 @@ export function PwaInstallPrompt() {
         displayModeQuery.removeListener(handleDisplayModeChange);
       }
     };
-  }, []);
+  }, [canPrompt]);
 
   useEffect(() => {
     if (!isOpen) return;

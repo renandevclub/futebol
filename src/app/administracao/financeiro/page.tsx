@@ -435,13 +435,14 @@ function AdminFinanceContent() {
           F&V Sports • Relatório Financeiro Oficial da Caixinha • ${selectedLeague.name}
         </div>
 
-        <script>
-          window.onload = function() { window.print(); };
-        </script>
       </body>
       </html>
     `;
 
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
     printWindow.document.write(html);
     printWindow.document.close();
   };

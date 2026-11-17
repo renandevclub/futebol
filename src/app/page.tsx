@@ -40,10 +40,6 @@ import { League, Profile } from "@/types/database";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-const LoginModal = dynamic(
-  () => import("@/components/LoginModal").then((module) => module.LoginModal),
-  { ssr: false },
-);
 const CreatePostModal = dynamic(
   () => import("@/components/CreatePostModal").then((module) => module.CreatePostModal),
   { ssr: false },
@@ -243,13 +239,6 @@ export default function Home() {
   }, [isAuthLoading, user, leagueTab]);
 
   // Modais de Controle
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [loginInitialMode, setLoginInitialMode] = useState<"login" | "register">("register");
-
-  const openRegisterModal = () => {
-    setLoginInitialMode("register");
-    setIsLoginOpen(true);
-  };
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isCreateMatchOpen, setIsCreateMatchOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -398,276 +387,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
       <Header
-        onOpenLogin={openRegisterModal}
+        onOpenLogin={() => router.push("/login")}
         onOpenCreatePost={() => setIsCreatePostOpen(true)}
         onOpenCreateMatch={() => setIsCreateMatchOpen(true)}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
       />
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          ESTADO 1: VISITANTE (NÃO AUTENTICADO) — LANDING PAGE PÚBLICA
-      ═══════════════════════════════════════════════════════════════════ */}
-      {!user && (
-        <div className="flex-1 flex flex-col">
-          {/* HERO SECTION DE APRESENTAÇÃO PÚBLICA */}
-          <section className="relative isolate overflow-hidden border-b border-emerald-900/40 bg-[#05110a] text-white py-14 sm:py-20 lg:py-24">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.22),transparent_70%)]" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_80%_80%,rgba(34,197,94,0.1),transparent_60%)]" />
-            <div className="pointer-events-none absolute -right-12 top-6 opacity-[0.03] select-none">
-              <Trophy className="h-80 w-80 text-emerald-400" />
-            </div>
-
-            <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="flex flex-col items-center text-center max-w-3xl mx-auto space-y-6 sm:space-y-8"
-              >
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-black uppercase tracking-wider backdrop-blur-md">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Futebol ⚽ • Vôlei 🏐 • Multi-Esportes</span>
-                  </div>
-                  <span className="block text-xl sm:text-3xl lg:text-4xl text-slate-200 font-black italic tracking-wider">
-                    CHEGOU A HORA DE
-                  </span>
-                  <span className="block text-4xl sm:text-6xl lg:text-7xl font-black italic uppercase tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(16,185,129,0.35)] leading-none">
-                    VIVER O ESPORTE!
-                  </span>
-                </div>
-
-                <p className="text-sm sm:text-base lg:text-lg text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
-                  A plataforma completa para organizar, participar e gerenciar suas ligas esportivas.
-                  Confirmação no WhatsApp, sorteio com raspadinha virtual de times, PIX direto e placar em tempo real.{" "}
-                  <span className="text-emerald-400 font-bold">
-                    Simples, rápido e 100% otimizado para celular.
-                  </span>
-                </p>
-
-                {/* Botão Principal de Login / Cadastro */}
-                <div className="w-full max-w-md pt-2">
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    whileHover={{ scale: 1.02 }}
-                    onClick={openRegisterModal}
-                    className="w-full flex items-center justify-center gap-3 px-8 py-4.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base sm:text-lg shadow-xl shadow-emerald-500/30 transition-all cursor-pointer group"
-                  >
-                    <MessageCircle className="w-6 h-6 text-white" />
-                    <span>Cadastre-se Grátis com WhatsApp</span>
-                    <ChevronRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
-                  </motion.button>
-                  <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-2">
-                    Crie sua conta em 30 segundos • 100% Gratuito e sem senhas
-                  </p>
-                </div>
-
-                {/* Barra de 4 Recursos em Cápsula */}
-                <div className="w-full pt-4 sm:pt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                    <div className="flex flex-col items-center justify-center text-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/40 backdrop-blur-md shadow-sm">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-1.5">
-                        <MessageCircle className="w-4 h-4" />
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-medium">Confirme no</span>
-                      <span className="text-xs sm:text-sm font-black text-emerald-300">WhatsApp</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center text-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/40 backdrop-blur-md shadow-sm">
-                      <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 mb-1.5">
-                        <Dices className="w-4 h-4" />
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-medium">Raspadinha &</span>
-                      <span className="text-xs sm:text-sm font-black text-amber-300">Sorteio de Times</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center text-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/40 backdrop-blur-md shadow-sm">
-                      <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 mb-1.5">
-                        <QrCode className="w-4 h-4" />
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-medium">Pagamento</span>
-                      <span className="text-xs sm:text-sm font-black text-teal-300">via PIX</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center text-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/40 backdrop-blur-md shadow-sm">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-1.5">
-                        <Zap className="w-4 h-4 fill-emerald-400" />
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-medium">Placar ao Vivo</span>
-                      <span className="text-xs sm:text-sm font-black text-emerald-300">Tempo Real</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </section>
-
-          {/* SEÇÃO MODALIDADES: FUTEBOL & VÔLEI */}
-          <section className="py-12 sm:py-16 px-4 max-w-5xl mx-auto w-full space-y-8">
-            <div className="text-center space-y-2">
-              <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                Multi-Esportes Integrado
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                Feito para quem Ama o Esporte
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium max-w-lg mx-auto">
-                Toda a estrutura necessária para partidas casuais, peladas semanais ou torneios completos.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-              {/* Card Futebol */}
-              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-white via-emerald-50/40 to-white dark:from-slate-900 dark:via-emerald-950/20 dark:to-slate-900 p-6 sm:p-8 shadow-lg space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-3xl shadow-sm">
-                  ⚽
-                </div>
-                <div>
-                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Futebol & Peladas
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-                    Liga de Futebol
-                  </h3>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Gerencie gols, assistências, cartões, artilharia individual, sorteio com raspadinha interativa,
-                  melhor da partida (MVP) e o divertido <strong>Mural do ANINGA 🐍</strong>.
-                </p>
-                <div className="pt-2 flex flex-wrap gap-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20">⚽ Artilharia</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20">👟 Assistências</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20">🏆 MVP</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20">🎰 Raspadinha</span>
-                </div>
-              </div>
-
-              {/* Card Vôlei */}
-              <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-white via-amber-50/40 to-white dark:from-slate-900 dark:via-amber-950/20 dark:to-slate-900 p-6 sm:p-8 shadow-lg space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-3xl shadow-sm">
-                  🏐
-                </div>
-                <div>
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                    Vôlei de Quadra & Areia
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-                    Liga de Vôlei
-                  </h3>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Placar ao vivo ponto a ponto, controle de sets, contagem de aces, bloqueios,
-                  pontuadores da rodada e estatísticas exclusivas para equipes de vôlei.
-                </p>
-                <div className="pt-2 flex flex-wrap gap-2 text-[11px] font-bold text-amber-700 dark:text-amber-300">
-                  <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">🏐 Pontos</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">⚡ Aces</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">🛡️ Bloqueios</span>
-                  <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">📈 Sets ao Vivo</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* SEÇÃO COMO FUNCIONA (PASSO A PASSO) */}
-          <section className="py-12 sm:py-16 px-4 bg-slate-100/70 dark:bg-slate-900/60 border-y border-slate-200 dark:border-slate-800">
-            <div className="max-w-5xl mx-auto space-y-8">
-              <div className="text-center space-y-2">
-                <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                  Simples & Rápido
-                </span>
-                <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                  Como Funciona o F&V Sports
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-sm flex items-center justify-center">
-                    01
-                  </div>
-                  <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Cadastre-se Grátis
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Crie sua conta em 30 segundos usando seu WhatsApp, sem senhas complicadas.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-sm flex items-center justify-center">
-                    02
-                  </div>
-                  <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Escolha sua Liga
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Entre no ambiente exclusivo da sua turma ou crie sua própria liga esportiva.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-sm flex items-center justify-center">
-                    03
-                  </div>
-                  <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Garanta sua Vaga
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Confirme presença, faça a raspadinha para descobrir seu time e pague pelo PIX.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-sm flex items-center justify-center">
-                    04
-                  </div>
-                  <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    Viva o Jogo
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                    Acompanhe o placar ao vivo, veja o time campeão, artilheiros e fotos na resenha.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center pt-2">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={openRegisterModal}
-                  className="w-full sm:w-auto max-w-md mx-auto px-7 sm:px-9 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-500/25 inline-flex items-center justify-center gap-2.5 cursor-pointer transition-all"
-                >
-                  <MessageCircle className="w-5 h-5 shrink-0" />
-                  <span>Criar Minha Conta Grátis</span>
-                  <ChevronRight className="w-4 h-4 shrink-0" />
-                </motion.button>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-2">
-                  Participe das peladas da sua turma ou crie sua própria liga esportiva
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* FOOTER EXCLUSIVO DA PÁGINA PÚBLICA */}
-          <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center space-y-1 mt-auto">
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5">
-              <span>🏆</span>
-              <span className="font-black">F&V Sports</span>
-            </p>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto">
-              Partidas de futebol e vôlei com confirmação pelo WhatsApp, raspadinha de times, PIX e rankings.
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              © 2026 F&V Sports • Todos os direitos reservados
-            </p>
-          </footer>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ESTADO 2: DASHBOARD PESSOAL DO USUÁRIO — BOAS-VINDAS, ATIVIDADES E LIGAS
-      ═══════════════════════════════════════════════════════════════════ */}
       {user && !currentLeague && (
         <main className="mx-auto w-full max-w-4xl flex-1 px-3.5 sm:px-4 py-5 sm:py-8 space-y-6 sm:space-y-7">
           {/* ═══════════════════════════════════════════════════════════════
@@ -1347,7 +1072,7 @@ export default function Home() {
             {leagueTab === "matches" && (
               <MatchListSection
                 onOpenCreateMatch={() => setIsCreateMatchOpen(true)}
-                onOpenLogin={() => setIsLoginOpen(true)}
+                onOpenLogin={() => router.push("/login")}
                 onSelectMatch={handleSelectMatch}
               />
             )}
@@ -1368,7 +1093,7 @@ export default function Home() {
                 leagueId={currentLeague?.id}
                 leagueName={currentLeague?.name}
                 onOpenCreatePost={() => setIsCreatePostOpen(true)}
-                onOpenLogin={() => setIsLoginOpen(true)}
+                onOpenLogin={() => router.push("/login")}
                 onJoinLeagueRequest={async () => {
                   if (!currentLeague) return;
                   if (currentLeague.is_blocked) {
@@ -1509,14 +1234,6 @@ export default function Home() {
       )}
 
       {/* MODAIS GLOBAIS */}
-      {isLoginOpen && (
-        <LoginModal
-          isOpen
-          initialMode={loginInitialMode}
-          onClose={() => setIsLoginOpen(false)}
-        />
-      )}
-
       {isCreatePostOpen && (
         <CreatePostModal
           isOpen

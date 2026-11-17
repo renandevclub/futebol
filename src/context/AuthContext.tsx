@@ -40,6 +40,8 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   isBlocked: boolean;
   isLoading: boolean;
+  isEntryPreloaderOpen: boolean;
+  closeEntryPreloader: () => void;
   login: (phone: string, password: string) => Promise<AuthResponse>;
   signup: (params: SignupParams) => Promise<AuthResponse>;
   recoverPassword: (phone: string, code: string, newPassword: string) => Promise<AuthResponse>;
@@ -58,6 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEntryPreloaderOpen, setIsEntryPreloaderOpen] = useState(false);
+  const closeEntryPreloader = useCallback(() => setIsEntryPreloaderOpen(false), []);
   const activeProfileFetchRef = React.useRef<Map<string, Promise<Profile | null>>>(new Map());
 
   /**
@@ -315,6 +319,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthUser(data.user);
         setSession(data.session);
         setProfile(userProfile);
+        setIsEntryPreloaderOpen(true);
         toast.success(`Bem-vindo(a) de volta, ${userProfile?.nome || 'Craque'}!`);
         return { success: true };
       }
@@ -452,6 +457,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (authData.user) {
         setAuthUser(authData.user);
         setSession(authData.session);
+        let signupSession = authData.session;
 
         // Se o Supabase não retornar sessão imediata (caso de confirmação), tenta login automático
         if (!authData.session) {
@@ -460,6 +466,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             password: password,
           });
           if (loginData.session) {
+            signupSession = loginData.session;
             setSession(loginData.session);
             setAuthUser(loginData.user);
           }
@@ -477,6 +484,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (consumeErr) {
             console.warn('Aviso: falha ao marcar convite como consumido:', consumeErr);
           }
+        }
+
+        if (signupSession && userProfile && userProfile.account_status !== 'blocked') {
+          setIsEntryPreloaderOpen(true);
         }
 
         toast.success(`Cadastro realizado com sucesso! Bem-vindo(a), ${nome.trim()}!`);
@@ -581,6 +592,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperAdmin: profile?.role === 'super_admin' && profile?.account_status !== 'blocked',
         isBlocked: profile?.account_status === 'blocked',
         isLoading,
+        isEntryPreloaderOpen,
+        closeEntryPreloader,
         login,
         signup,
         recoverPassword,
