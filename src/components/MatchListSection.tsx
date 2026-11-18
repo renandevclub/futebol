@@ -882,13 +882,13 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
 
                           {/* Título da Partida Encerrada (Centralizado e Maiúsculo com GradientText) */}
                           <div className="flex flex-col items-center justify-center text-center py-1 sm:py-1.5 min-w-0">
-                            <h3 className="font-black text-xl sm:text-2xl uppercase tracking-[0.14em] leading-tight line-clamp-2 px-2">
+                            <h3 className="titulo-logo text-xl sm:text-2xl leading-tight line-clamp-2 px-2">
                               <GradientText
                                 colors={["#fbbf24", "#ffffff", "#b45309"]}
                                 animationSpeed={2}
                                 variant="flow"
                                 glow={0.5}
-                                className="font-black text-xl sm:text-2xl tracking-[0.14em]"
+                                className="titulo-logo text-xl sm:text-2xl"
                               >
                                 {match.titulo}
                               </GradientText>
@@ -996,7 +996,7 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
                           transition={{ duration: 0.4, ease: "easeOut" }}
-                          className="font-black text-xl sm:text-2xl uppercase tracking-[0.14em] leading-tight line-clamp-2 px-2"
+                          className="titulo-logo text-xl sm:text-2xl leading-tight line-clamp-2 px-2"
                         >
                           <GradientText
                             colors={
@@ -1007,7 +1007,7 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
                             animationSpeed={2}
                             variant="flow"
                             glow={0.5}
-                            className="font-black text-xl sm:text-2xl tracking-[0.14em]"
+                            className="titulo-logo text-xl sm:text-2xl"
                           >
                             {match.titulo}
                           </GradientText>

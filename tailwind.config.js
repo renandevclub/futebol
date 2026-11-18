@@ -34,6 +34,9 @@ module.exports = {
           600: '#ca8a04',
         }
       },
+      fontFamily: {
+        luckiest: ["'Luckiest Guy'", 'cursive'],
+      },
     },
   },
   plugins: [],

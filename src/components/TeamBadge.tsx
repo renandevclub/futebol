@@ -50,32 +50,32 @@ const SIZE_MAP: Record<
   sm: {
     container: 'w-8 h-8 min-w-[32px] min-h-[32px]',
     emoji: 'text-base',
-    imgPadding: 'p-1',
+    imgPadding: 'p-0.5',
   },
   md: {
-    container: 'w-11 h-11 min-w-[44px] min-h-[44px]',
-    emoji: 'text-xl',
-    imgPadding: 'p-1.5',
+    container: 'w-12 h-12 min-w-[48px] min-h-[48px]',
+    emoji: 'text-2xl',
+    imgPadding: 'p-0.5',
   },
   lg: {
-    container: 'w-14 h-14 sm:w-18 sm:h-18 min-w-[56px] min-h-[56px]',
-    emoji: 'text-2xl sm:text-3xl',
-    imgPadding: 'p-2',
+    container: 'w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] min-h-[64px]',
+    emoji: 'text-3xl sm:text-4xl',
+    imgPadding: 'p-0.5 sm:p-1',
   },
   xl: {
-    container: 'w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 min-w-[64px] min-h-[64px]',
-    emoji: 'text-3xl sm:text-4xl lg:text-5xl',
-    imgPadding: 'p-2 sm:p-2.5',
+    container: 'w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] min-h-[80px]',
+    emoji: 'text-4xl sm:text-5xl',
+    imgPadding: 'p-1',
   },
   '2xl': {
     container: 'w-24 h-24 sm:w-28 sm:h-28 min-w-[96px] min-h-[96px]',
     emoji: 'text-5xl sm:text-6xl',
-    imgPadding: 'p-3',
+    imgPadding: 'p-2 sm:p-2.5',
   },
   custom: {
     container: '',
     emoji: 'text-xl',
-    imgPadding: 'p-1.5',
+    imgPadding: 'p-1',
   },
 };
 

@@ -1,6 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.titulo-logo {
+  font-family: 'Luckiest Guy', cursive;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #58ff00;
+}
 
 @layer base {
   :root {
