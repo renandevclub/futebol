@@ -33,6 +33,7 @@ import { WhatsAppNotifierModal } from './WhatsAppNotifierModal';
 import { PixPaymentModal } from './PixPaymentModal';
 import { ConfirmPaymentModal } from './ConfirmPaymentModal';
 import { subscribeToTables } from '@/lib/realtime';
+import { generateMatchFinancePdf } from '@/lib/matchFinancePdfGenerator';
 
 interface MatchFinanceModalProps {
   isOpen: boolean;
@@ -293,159 +294,29 @@ export const MatchFinanceModal: React.FC<MatchFinanceModalProps> = ({
     }
   };
 
-  // GERAR E EXPORTAR RELATÓRIO PDF DA PARTIDA
+  // GERAR E BAIXAR O RESUMO FINANCEIRO EM PDF
   const handleExportPDF = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Não foi possível abrir a janela de impressão. Permita pop-ups no seu navegador.');
-      return;
+    try {
+      generateMatchFinancePdf({
+        match,
+        participants,
+        expenses,
+        paidParticipantIds: paidParticipants.map((participant) => participant.id),
+        summary: {
+          totalCollected: totalCollectedReal,
+          participantsPaid: paidParticipants.length,
+          participantsTotal: totalConfirmed,
+          arenaCost: custoAluguelArena,
+          otherExpensesTotal,
+          totalExpenses,
+          netBalance,
+        },
+      });
+      toast.success('Resumo financeiro baixado com sucesso!');
+    } catch (err) {
+      console.error('Erro ao gerar PDF do resumo financeiro:', err);
+      toast.error('Erro ao gerar o PDF do resumo financeiro.');
     }
-
-    const dateParts = match.data.split('-');
-    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-    const generatedAt = new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <title>Resumo Financeiro - ${match.titulo}</title>
-        <style>
-          @page { size: A4; margin: 15mm; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; font-size: 13px; }
-          .header { border-bottom: 2px solid #f97316; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
-          .brand { font-size: 22px; font-weight: 900; color: #0f172a; }
-          .brand span { color: #f97316; }
-          .subtitle { font-size: 12px; font-weight: 700; color: #64748b; margin-top: 2px; }
-          .meta { font-size: 11px; color: #64748b; text-align: right; line-height: 1.4; }
-          
-          .summary-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
-          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; }
-          .card-title { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b; }
-          .card-value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 4px; }
-          .card-desc { font-size: 10px; color: #166534; font-weight: 700; margin-top: 2px; }
-          
-          .table-title { font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 16px; margin-bottom: 8px; border-left: 4px solid #f97316; padding-left: 8px; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th { background: #f1f5f9; color: #334155; text-align: left; padding: 8px 10px; font-weight: 800; font-size: 11px; border-bottom: 1px solid #cbd5e1; }
-          td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
-          tr:nth-child(even) { background: #fafafa; }
-          
-          .status { font-weight: 800; font-size: 10px; padding: 3px 8px; border-radius: 12px; display: inline-block; }
-          .status-paid { background: #dcfce7; color: #15803d; }
-          .status-pending { background: #fef3c7; color: #b45309; }
-          
-          .footer { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; font-size: 11px; color: #94a3b8; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <div class="brand">F&V<span>Sports</span></div>
-            <div class="subtitle">Resumo Financeiro • ${match.titulo}</div>
-          </div>
-          <div class="meta">
-            <div>Data: <strong>${formattedDate} às ${match.horario.substring(0, 5)}</strong></div>
-            <div>Local: <strong>${match.local}</strong></div>
-            <div>Emitido em: ${generatedAt}</div>
-          </div>
-        </div>
-
-        <div class="summary-box">
-          <div class="card">
-            <div class="card-title">1. Total Arrecadado</div>
-            <div class="card-value" style="color: #059669;">R$ ${totalCollectedReal.toFixed(2)}</div>
-            <div class="card-desc">${paidParticipants.length} de ${totalConfirmed} pagaram</div>
-          </div>
-          <div class="card">
-            <div class="card-title">2. Aluguel Arena/Society</div>
-            <div class="card-value" style="color: #d97706;">R$ ${custoAluguelArena.toFixed(2)}</div>
-            <div class="card-desc" style="color: #64748b;">${match.local || 'Locação de Quadra'}</div>
-          </div>
-          <div class="card">
-            <div class="card-title">3. Outras Despesas</div>
-            <div class="card-value" style="color: #dc2626;">R$ ${otherExpensesTotal.toFixed(2)}</div>
-            <div class="card-desc" style="color: #64748b;">${expenses.length} item(ns) avulso(s)</div>
-          </div>
-          <div class="card">
-            <div class="card-title">4. Saldo Final</div>
-            <div class="card-value" style="color: ${netBalance >= 0 ? '#059669' : '#dc2626'};">R$ ${netBalance.toFixed(2)}</div>
-            <div class="card-desc" style="color: #64748b;">Gastos: R$ ${totalExpenses.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div class="table-title">1. Lista de Pagamento dos Participantes</div>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40px;">#</th>
-              <th>Nome do Participante</th>
-              <th>Valor Devido</th>
-              <th style="text-align: right;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${participants.map((p, index) => {
-              const name = p.user?.apelido ? `${p.user.nome} (${p.user.apelido})` : p.user?.nome || p.guest_name || 'Jogador';
-              return `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td><strong>${name}</strong></td>
-                  <td>R$ ${pricePerParticipant.toFixed(2)}</td>
-                  <td style="text-align: right;">
-                    ${p.paid 
-                      ? `<span class="status status-paid">PAGO ✅</span>` 
-                      : `<span class="status status-pending">PENDENTE ⏳</span>`}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-
-        <div class="table-title">2. Demonstrativo de Custos & Despesas</div>
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40px;">#</th>
-              <th>Descrição do Custo</th>
-              <th>Categoria</th>
-              <th style="text-align: right;">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td><strong>Aluguel da Arena / Society (${match.local || 'Quadra'})</strong></td>
-              <td><span style="font-size: 10px; font-weight: 700; color: #d97706;">🏟️ Custo de Locação</span></td>
-              <td style="text-align: right; font-weight: 800; color: #dc2626;">- R$ ${custoAluguelArena.toFixed(2)}</td>
-            </tr>
-            ${expenses.map((exp, idx) => `
-              <tr>
-                <td>${idx + 2}</td>
-                <td>${exp.descricao}</td>
-                <td><span style="font-size: 10px; font-weight: 700; color: #64748b;">💸 Despesa Avulsa</span></td>
-                <td style="text-align: right; font-weight: 800; color: #dc2626;">- R$ ${Number(exp.valor).toFixed(2)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          F&V Sports • Documento Oficial de Fechamento Financeiro • ${match.titulo}
-        </div>
-
-      </body>
-      </html>
-    `;
-
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
   };
 
   const filteredParticipants = participants.filter((p) => {

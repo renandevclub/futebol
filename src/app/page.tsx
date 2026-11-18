@@ -1051,33 +1051,68 @@ export default function Home() {
             onPreviewLogo={handlePreviewLeagueLogo}
           />
 
-          {/* Alternador de Abas do Ambiente da Liga (Mobile-First com Rolagem Lateral Fluida) */}
-          <div className="w-full overflow-x-auto no-scrollbar scrollbar-none scroll-smooth pb-1 pt-0.5">
-            <div className="flex items-center justify-start sm:justify-center min-w-full w-max px-3 sm:px-0">
+          {/* Alternador de Abas do Ambiente da Liga (Sem rolagem lateral no mobile: 100% visível e organizado) */}
+          <div className="w-full px-1 sm:px-0">
+            <div className="flex items-center justify-center w-full">
               <SegmentedControl
                 id="league-sections"
                 ariaLabel="Seções da liga"
                 value={leagueTab}
                 onValueChange={setLeagueTab}
-                scrollActiveIntoView
-                className="p-1 sm:p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex items-center gap-1 shrink-0"
+                className={`p-1 sm:p-1.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs w-full grid ${
+                  user ? "grid-cols-5" : "grid-cols-4"
+                } sm:flex sm:w-auto sm:items-center gap-1 shrink-0`}
                 buttonClassName={(_, isActive) =>
-                  `min-h-[44px] px-3 sm:px-4.5 py-2 rounded-xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                  `min-h-[48px] sm:min-h-[42px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none ${
                     isActive
                       ? isCurrentLeagueVolei
                         ? "bg-amber-500 text-white shadow-md shadow-amber-500/25"
                         : "bg-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/40"
                   }`
                 }
                 options={[
-                  { value: "matches", icon: <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>{isCurrentLeagueVolei ? "🏐 Partidas" : "⚽ Partidas"}</span> },
-                  { value: "tournaments", icon: <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>🏆 Campeonatos</span> },
-                  { value: "standings", icon: <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>🥇 Rankings</span> },
+                  {
+                    value: "matches",
+                    icon: (
+                      <span className="text-base sm:text-sm shrink-0 leading-none">
+                        {isCurrentLeagueVolei ? "🏐" : "⚽"}
+                      </span>
+                    ),
+                    label: <span>Partidas</span>,
+                  },
+                  {
+                    value: "tournaments",
+                    icon: (
+                      <Trophy className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 text-amber-500" />
+                    ),
+                    label: <span>Torneios</span>,
+                  },
+                  {
+                    value: "standings",
+                    icon: (
+                      <Award className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 text-yellow-500" />
+                    ),
+                    label: <span>Rankings</span>,
+                  },
                   ...(user
-                    ? [{ value: "feed" as const, icon: <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>📱 Feed</span> }]
+                    ? [
+                        {
+                          value: "feed" as const,
+                          icon: (
+                            <MessageSquare className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 text-sky-400" />
+                          ),
+                          label: <span>Feed</span>,
+                        },
+                      ]
                     : []),
-                  { value: "members", icon: <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />, label: <span>👥 Jogadores</span> },
+                  {
+                    value: "members",
+                    icon: (
+                      <Users className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 text-slate-400" />
+                    ),
+                    label: <span>Jogadores</span>,
+                  },
                 ]}
               />
             </div>

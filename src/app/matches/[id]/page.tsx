@@ -2966,12 +2966,12 @@ export default function MatchDetailPage({
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800/90 px-3.5 py-2.5 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-2.5">
           {!user ? (
-            <div className="w-full flex items-center justify-between gap-2">
+            <div className="w-full flex items-center justify-between gap-2.5">
               <div className="min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-400 leading-none">
                   Partida Aberta
                 </span>
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-0.5 truncate">
                   {remaining > 0
                     ? `${remaining} vagas restantes`
                     : "Vagas esgotadas"}
@@ -2980,55 +2980,69 @@ export default function MatchDetailPage({
               <motion.button
                 whileTap={{ scale: 0.94 }}
                 onClick={() => setIsLoginOpen(true)}
-                className="min-h-11 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
+                className="h-9 sm:h-10 px-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
               >
                 <span>Entrar / Cadastrar</span>
               </motion.button>
             </div>
           ) : isEnded ? (
-            <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
-                <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate">
-                  Partida Finalizada
-                </span>
+            <div className="w-full flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 block leading-none">
+                    Encerrada
+                  </span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate block mt-0.5">
+                    Partida Finalizada
+                  </span>
+                </div>
               </div>
-              <button
+              <motion.button
+                whileTap={{ scale: 0.94 }}
                 onClick={() => setIsChampionModalOpen(true)}
-                className="min-h-11 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1.5"
+                className="h-9 sm:h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1.5"
               >
                 <Trophy className="w-3.5 h-3.5" />
                 <span>Ver Campeão</span>
-              </button>
+              </motion.button>
             </div>
           ) : isJoined ? (
-            <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="w-full flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 {currentParticipant?.team != null ? (
                   <>
                     <TeamBadge
                       teamInfo={getTeamInfo(match, currentParticipant.team)}
-                      size="xs"
-                      rounded="lg"
+                      size="sm"
+                      rounded="full"
+                      className="shadow-sm shrink-0 ring-1 ring-slate-200/80 dark:ring-slate-700/80"
                     />
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 block leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 block leading-none truncate">
                         Você está no
                       </span>
-                      <span className="text-xs font-black text-slate-900 dark:text-white truncate block">
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate block leading-tight mt-0.5">
                         {getTeamInfo(match, currentParticipant.team).name}
                       </span>
                     </div>
                   </>
                 ) : (
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-black uppercase text-amber-500 block leading-tight">
-                      Inscrição Ativa
-                    </span>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate block">
-                      Aguardando Sorteio
-                    </span>
-                  </div>
+                  <>
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                      <Shuffle className="w-4 h-4 animate-pulse" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-500 block leading-none truncate">
+                        Inscrição Ativa
+                      </span>
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate block leading-tight mt-0.5">
+                        Aguardando Sorteio
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -3036,9 +3050,10 @@ export default function MatchDetailPage({
                 {match.sorteio_raspadinha_ativo &&
                   currentParticipant?.team == null && (
                     <motion.button
+                      type="button"
                       whileTap={{ scale: 0.94 }}
                       onClick={() => setIsScratchCardOpen(true)}
-                      className="min-h-11 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 animate-pulse"
+                      className="h-9 px-2.5 sm:px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-xl shadow-md shadow-amber-500/20 flex items-center gap-1.5 animate-pulse shrink-0"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                       <span>Raspadinha</span>
@@ -3047,32 +3062,40 @@ export default function MatchDetailPage({
 
                 {match.valor > 0 && !currentParticipant?.paid && (
                   <motion.button
+                    type="button"
                     whileTap={{ scale: 0.94 }}
                     onClick={() => setIsPixModalOpen(true)}
-                    className="min-h-11 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                    className="h-9 px-2.5 sm:px-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-md shadow-emerald-500/20 flex items-center gap-1.5 shrink-0 transition-all"
                   >
-                    <QrCode className="w-3.5 h-3.5" />
+                    <QrCode className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Pagar PIX</span>
                   </motion.button>
                 )}
 
                 {match.valor > 0 && currentParticipant?.paid && (
-                  <span className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <div className="h-9 px-2.5 sm:px-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 shrink-0 select-none shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Pago</span>
-                  </span>
+                  </div>
+                )}
+
+                {match.valor === 0 && (
+                  <div className="h-9 px-2.5 sm:px-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 shrink-0 select-none shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Grátis</span>
+                  </div>
                 )}
 
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.94 }}
                   onClick={handleToggleJoin}
-                  className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 text-rose-600 transition-colors hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:text-rose-400 dark:hover:text-rose-300"
+                  className="h-9 px-2.5 sm:px-3 flex items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 hover:border-rose-500/30 transition-colors font-bold text-xs shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                   aria-label="Desistir da partida"
                   title="Desistir da partida"
                 >
-                  <XCircle className="w-4 h-4" />
-                  <span className="hidden min-[360px]:inline text-[10px] font-black">
+                  <XCircle className="w-3.5 h-3.5 stroke-[2.2]" />
+                  <span className="hidden min-[360px]:inline text-xs font-bold">
                     Desistir
                   </span>
                 </motion.button>

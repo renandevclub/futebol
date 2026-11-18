@@ -734,53 +734,6 @@ export const MatchListSection: React.FC<MatchListSectionProps> = ({
           TELA DE PARTIDAS DA LIGA ATIVA
       ═══════════════════════════════════════════════════════════════════ */}
       <div className="space-y-6 sm:space-y-7">
-        {/* Top Controls: Busca & Informações da Lista */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/80 dark:bg-slate-900/80 p-3 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 text-sm font-black shrink-0">
-              ⚽
-            </div>
-            <div>
-              <h3 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white leading-tight">
-                Partidas Agendadas
-              </h3>
-              <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                {filteredMatches.length}{" "}
-                {filteredMatches.length === 1
-                  ? "partida encontrada"
-                  : "partidas encontradas"}
-              </span>
-            </div>
-          </div>
-
-          {/* Controles: Busca (para todos) e Botão Nova Partida (apenas para Admin da Liga) */}
-          <div className="flex items-center gap-2 flex-1 sm:justify-end">
-            <div className="relative flex-1 sm:max-w-xs">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder={currentLeague ? `Buscar em ${currentLeague.name}...` : "Buscar partidas..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white shadow-inner font-medium placeholder:text-slate-400"
-              />
-            </div>
-
-              {isCurrentLeagueAdmin && !currentLeague?.is_blocked && (
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={{ scale: 1.03 }}
-                  onClick={onOpenCreateMatch}
-                  className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all shrink-0 cursor-pointer"
-                  title="Criar Nova Partida nesta Liga"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Nova Partida</span>
-                </motion.button>
-              )}
-            </div>
-          </div>
-
           {/* Grid de Partidas com Espaçamento e Separação Visual Aprimorada */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-7">

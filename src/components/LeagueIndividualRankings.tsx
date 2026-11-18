@@ -8,7 +8,6 @@ import {
   Trophy,
   Award,
   Flame,
-  Search,
   Sparkles,
   User,
   Shield,
@@ -28,7 +27,6 @@ interface LeagueIndividualRankingsProps {
 export const LeagueIndividualRankings: React.FC<LeagueIndividualRankingsProps> = ({ league }) => {
   const [rankings, setRankings] = useState<LeaguePlayerRanking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const isVolei = league.sport_type === 'volei';
 
   // Abas disponíveis
@@ -66,16 +64,8 @@ export const LeagueIndividualRankings: React.FC<LeagueIndividualRankingsProps> =
     void loadRankings();
   }, [league.id]);
 
-  // Filtragem por busca
-  const filteredRankings = useMemo(() => {
-    if (!searchTerm.trim()) return rankings;
-    const query = searchTerm.toLowerCase();
-    return rankings.filter((r) => {
-      const name = r.user.nome?.toLowerCase() || '';
-      const apelido = r.user.apelido?.toLowerCase() || '';
-      return name.includes(query) || apelido.includes(query);
-    });
-  }, [rankings, searchTerm]);
+  // Lista de rankings para exibição
+  const filteredRankings = rankings;
 
   // Listas ordenadas por categoria
   const sortedByGoals = useMemo(() => {
@@ -359,104 +349,99 @@ export const LeagueIndividualRankings: React.FC<LeagueIndividualRankingsProps> =
   return (
     <div className="space-y-5">
       {/* Barra de Navegação de Abas do Ranking Individual */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 p-2 sm:p-2.5 rounded-3xl border border-slate-800 shadow-md">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          {!isVolei ? (
-            <>
-              {/* Futebol: Artilharia */}
-              <button
-                onClick={() => setActiveTab('goals')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeTab === 'goals'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <span>⚽</span>
-                <span>Artilharia</span>
-              </button>
+      <div
+        className={`p-1 sm:p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-md w-full grid ${
+          !isVolei ? 'grid-cols-5' : 'grid-cols-4'
+        } sm:flex sm:items-center sm:justify-start gap-1`}
+      >
+        {!isVolei ? (
+          <>
+            {/* Futebol: Artilharia */}
+            <button
+              onClick={() => setActiveTab('goals')}
+              className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+                activeTab === 'goals'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+              }`}
+            >
+              <span className="text-sm sm:text-base leading-none">⚽</span>
+              <span className="hidden sm:inline">Artilharia</span>
+              <span className="sm:hidden">Artilharia</span>
+            </button>
 
-              {/* Futebol: Assistências */}
-              <button
-                onClick={() => setActiveTab('assists')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeTab === 'assists'
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <span>🎯</span>
-                <span>Assistências</span>
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Vôlei: Pontuadores */}
-              <button
-                onClick={() => setActiveTab('points')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeTab === 'points'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <span>🏐</span>
-                <span>Pontuadores</span>
-              </button>
-            </>
-          )}
+            {/* Futebol: Assistências */}
+            <button
+              onClick={() => setActiveTab('assists')}
+              className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+                activeTab === 'assists'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+              }`}
+            >
+              <span className="text-sm sm:text-base leading-none">🎯</span>
+              <span className="hidden sm:inline">Assistências</span>
+              <span className="sm:hidden">Assists</span>
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Vôlei: Pontuadores */}
+            <button
+              onClick={() => setActiveTab('points')}
+              className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+                activeTab === 'points'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+              }`}
+            >
+              <span className="text-sm sm:text-base leading-none">🏐</span>
+              <span className="hidden sm:inline">Pontuadores</span>
+              <span className="sm:hidden">Pontos</span>
+            </button>
+          </>
+        )}
 
-          {/* Craque da Partida (MVP 🏆) */}
-          <button
-            onClick={() => setActiveTab('mvp')}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'mvp'
-                ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/25'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <span>🏆</span>
-            <span>Hall dos Craques</span>
-          </button>
+        {/* Craque da Partida (MVP 🏆) */}
+        <button
+          onClick={() => setActiveTab('mvp')}
+          className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+            activeTab === 'mvp'
+              ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/25'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <span className="text-sm sm:text-base leading-none">🏆</span>
+          <span className="hidden sm:inline">Hall dos Craques</span>
+          <span className="sm:hidden">Craques</span>
+        </button>
 
-          {/* Mural do ANINGA 🐍 */}
-          <button
-            onClick={() => setActiveTab('aninga')}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'aninga'
-                ? 'bg-gradient-to-r from-emerald-600 via-teal-700 to-green-800 text-white shadow-md shadow-emerald-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <span>🐍</span>
-            <span>Mural do ANINGA</span>
-          </button>
+        {/* Mural do ANINGA 🐍 */}
+        <button
+          onClick={() => setActiveTab('aninga')}
+          className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+            activeTab === 'aninga'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-700 to-green-800 text-white shadow-md shadow-emerald-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <span className="text-sm sm:text-base leading-none">🐍</span>
+          <span className="hidden sm:inline">Mural do ANINGA</span>
+          <span className="sm:hidden">Aninga</span>
+        </button>
 
-          {/* Geral / Completo */}
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-              activeTab === 'general'
-                ? 'bg-slate-700 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <span>📊</span>
-            <span>Geral</span>
-          </button>
-        </div>
-
-        {/* Busca de Jogadores */}
-        <div className="relative sm:max-w-xs w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar jogador..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3.5 py-2 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
-          />
-        </div>
+        {/* Geral / Completo */}
+        <button
+          onClick={() => setActiveTab('general')}
+          className={`min-h-[48px] sm:min-h-[40px] px-1 sm:px-4 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 whitespace-nowrap cursor-pointer select-none text-center ${
+            activeTab === 'general'
+              ? 'bg-slate-700 text-white shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+          }`}
+        >
+          <span className="text-sm sm:text-base leading-none">📊</span>
+          <span>Geral</span>
+        </button>
       </div>
 
       {/* Conteúdo Dinâmico por Aba */}

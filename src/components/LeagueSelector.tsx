@@ -62,7 +62,7 @@ export const LeagueSelector: React.FC<LeagueSelectorProps> = ({
 
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
         {/* Informações da Liga Ativa */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-start sm:items-center gap-3.5 min-w-0">
           <div
             onClick={(e) => {
               if (currentLeague.logo_url && onPreviewLogo) {
@@ -70,7 +70,7 @@ export const LeagueSelector: React.FC<LeagueSelectorProps> = ({
                 onPreviewLogo(currentLeague);
               }
             }}
-            className={`w-12 h-12 sm:w-14 sm:h-14 min-w-[48px] min-h-[48px] max-w-[48px] max-h-[48px] sm:min-w-[56px] sm:min-h-[56px] sm:max-w-[56px] sm:max-h-[56px] rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-md shrink-0 overflow-hidden aspect-square border border-white/20 relative ${
+            className={`w-14 h-14 sm:w-16 sm:h-16 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] sm:min-w-[64px] sm:min-h-[64px] sm:max-w-[64px] sm:max-h-[64px] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-md shrink-0 overflow-hidden aspect-square border-2 border-white/20 relative ${
               isVolei
                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/25'
                 : 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25'
@@ -79,7 +79,7 @@ export const LeagueSelector: React.FC<LeagueSelectorProps> = ({
                 ? 'cursor-zoom-in group/selector-avatar hover:ring-2 hover:ring-white/40 transition-all'
                 : ''
             }`}
-            title={currentLeague.logo_url && onPreviewLogo ? 'Toque/clique para ver a foto de perfil ampliada' : undefined}
+            title={currentLeague.logo_url && onPreviewLogo ? 'Toque para ver a foto de perfil ampliada' : undefined}
           >
             {currentLeague.logo_url ? (
               <>
@@ -100,53 +100,59 @@ export const LeagueSelector: React.FC<LeagueSelectorProps> = ({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+            {/* Título Principal da Liga */}
+            <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight truncate leading-tight">
+              {currentLeague.name}
+            </h2>
+
+            {/* Descrição da Liga */}
+            {currentLeague.description && (
+              <p className="text-xs text-slate-300/80 font-medium line-clamp-1 mt-0.5">
+                📝 {currentLeague.description}
+              </p>
+            )}
+
+            {/* Badges e Status da Liga em Linha Única */}
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                 isVolei
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                   : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
               }`}>
-                {isVolei ? '🏐 Liga de Vôlei' : '⚽ Liga de Futebol'}
+                {isVolei ? '🏐 Vôlei' : '⚽ Futebol'}
               </span>
+
               {currentLeague.has_password && (
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                  <span>🔒 Senha Ativa</span>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                  <span>🔒 Senha</span>
                 </span>
               )}
+
               {(() => {
                 const admins = currentLeague.admins && currentLeague.admins.length > 0
                   ? currentLeague.admins
                   : (currentLeague.owner ? [currentLeague.owner] : []);
                 const adminNames = admins.map(a => `${a.nome}${a.apelido ? ` (${a.apelido})` : ''}`).join(', ');
                 return (
-                  <span className="text-[11px] sm:text-xs text-slate-300 font-medium truncate max-w-[220px] sm:max-w-none" title={`Administradores: ${adminNames}`}>
-                    👤 {adminNames || 'Administrador'}
+                  <span className="inline-flex items-center gap-1 text-[10px] text-slate-300 font-bold px-2 py-0.5 rounded-full bg-white/10 border border-white/10 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none" title={`Administradores: ${adminNames}`}>
+                    <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">{adminNames || 'Administrador'}</span>
                   </span>
                 );
               })()}
             </div>
-
-            <h2 className="text-base sm:text-xl font-black text-white tracking-tight truncate mt-0.5">
-              {currentLeague.name}
-            </h2>
-
-            {currentLeague.description && (
-              <p className="text-[11px] sm:text-xs text-slate-300/90 font-medium line-clamp-1 mt-0.5">
-                📝 {currentLeague.description}
-              </p>
-            )}
           </div>
         </div>
 
         {/* Botões de Ação do Contexto da Liga */}
-        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/10">
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
           {isOwnerOrSuper && onEditLeague && (
             <button
               onClick={onEditLeague}
-              className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-slate-700/60 shadow-xs cursor-pointer"
+              className="h-10 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-700/60 shadow-xs cursor-pointer active:scale-95"
               title="Configurações da Liga"
             >
-              <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+              <Edit3 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>Editar</span>
             </button>
           )}
@@ -154,20 +160,27 @@ export const LeagueSelector: React.FC<LeagueSelectorProps> = ({
           {canManageCurrentLeague && onOpenCreateMatch && !currentLeague.is_blocked && (
             <button
               onClick={onOpenCreateMatch}
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black transition-colors shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="h-10 px-2.5 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black transition-all shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              title="Criar Nova Partida"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Criar Partida</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span>
+                <span className="inline sm:hidden">Criar</span>
+                <span className="hidden sm:inline">Criar Partida</span>
+              </span>
             </button>
           )}
 
           <button
             onClick={clearSelectedLeague}
-            className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-emerald-500/20 shadow-xs cursor-pointer"
+            className="h-10 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-emerald-500/25 shadow-xs cursor-pointer active:scale-95"
             title="Escolher outra Liga"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Trocar de Liga</span>
+            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+            <span>
+              <span className="inline sm:hidden">Trocar</span>
+              <span className="hidden sm:inline">Trocar de Liga</span>
+            </span>
           </button>
         </div>
       </div>
